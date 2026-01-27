@@ -86,6 +86,57 @@ class Triangulation:
     v_from = self.vertices[v_from_id]
     v_to = self.vertices[v_to_id]
     return Triangulation.find_edge(v_from, v_to)
+  
+  def flip_edge(self, v1_id: int, v2_id: int) -> bool:
+    he = self.find_edge_by_ids(v1_id, v2_id)
+    twin = he.twin
+    if he.face == self._outer_face or twin.face == self._outer_face:
+        return False
+    # Store all neighbors before modification
+    he_next = he.next
+    he_prev = he.prev
+    twin_next = twin.next
+    twin_prev = twin.prev 
+    # Store faces
+    face1 = he.face
+    face2 = twin.face
+    # The 4 vertices: he goes from b→c, twin goes c→b
+    # he's face has vertices: a (he_prev.origin), b (he.origin), c (he_next.origin)
+    # twin's face has vertices: d (twin_prev.origin), c (twin.origin), b (twin_next.origin)
+    a = he_prev.origin
+    d = twin_prev.origin
+    # Fix vertex half_edge references before changing origins
+    if he.origin.half_edge == he:
+        he.origin.half_edge = twin_next
+    if twin.origin.half_edge == twin:
+        twin.origin.half_edge = he_next
+    # Rotate edge: he now goes a→d, twin goes d→a
+    he.origin = a
+    twin.origin = d
+    # Update face assignments
+    he.face = face2
+    twin.face = face1
+    twin_next.face = face1
+    he_next.face = face2
+    # he_prev stays in face1, twin_prev stays in face2
+    # Relink face1: he_prev → twin_next → twin → he_prev
+    he_prev.next = twin_next
+    twin_next.prev = he_prev
+    twin_next.next = twin
+    twin.prev = twin_next
+    twin.next = he_prev
+    he_prev.prev = twin
+    # Relink face2: he → twin_prev → he_next → he
+    he.next = twin_prev
+    twin_prev.prev = he
+    twin_prev.next = he_next
+    he_next.prev = twin_prev
+    he_next.next = he
+    he.prev = he_next
+    # Update face half_edge references
+    face1.half_edge = twin
+    face2.half_edge = he
+    return True
 
   #####################
   #  Factory methods  #

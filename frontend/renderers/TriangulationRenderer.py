@@ -30,6 +30,7 @@ class TriangulationRenderer(Renderer):
     super().__init__(
       content,
       internal_content_padding = Vector2(vertex_radius, vertex_radius),
+      title = "Triangulation",
       **kwargs)
     self.vertex_radius = vertex_radius
     self.vertex_color = vertex_color

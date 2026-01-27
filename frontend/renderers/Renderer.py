@@ -1,21 +1,34 @@
 from abc import ABC, abstractmethod
 from pygame.math import Vector2
 import pygame
-from frontend.Gobals import Color
+from frontend.Gobals import Color, DEFAULT_FONT
 
 class Renderer(ABC):
+
+  #default styling settings
+  OUTLINE_COLOR = Color.BLACK
+  OUTLINE_WIDTH = 2
+  TITLE_FONT = DEFAULT_FONT
+  TITLE_COLOR = Color.BLACK
+
   def __init__(self, 
               content: any,
               anchor: Vector2, 
               bounds: Vector2, 
+              title: str = "",
+              title_font: pygame.font.Font = TITLE_FONT,
+              title_color: Color = TITLE_COLOR,
               margin: Vector2 = Vector2(0,0),
               internal_content_padding = Vector2(0,0),
               fill: bool = False, 
               stretch: bool = True,
               outline: bool = True, 
-              outline_color: Color = Color.BLACK,
-              outline_width: int = 2):
+              outline_color: Color = OUTLINE_COLOR,
+              outline_width: int = OUTLINE_WIDTH):
     self.content = content
+    self.title = title
+    self.title_font = title_font
+    self.title_color = title_color
     self.anchor = anchor
     self.bounds = bounds
     self.fill = fill
@@ -37,6 +50,12 @@ class Renderer(ABC):
   def render(self, screen: pygame.Surface):
     if self.outline_rect:
       pygame.draw.rect(screen, self.outline_color.value, self.outline_rect, self.outline_width)
+    if self.title:
+      title_surface = self.title_font.render(self.title, True, self.title_color.value)
+      title_x = self.anchor.x + (self.bounds.x - title_surface.get_width()) // 2
+      title_y = self.anchor.y - title_surface.get_height() - 5 #5 pixels padding
+      screen.blit(title_surface, (title_x, title_y))
+
 
   @abstractmethod
   def update_content(self, content: any):

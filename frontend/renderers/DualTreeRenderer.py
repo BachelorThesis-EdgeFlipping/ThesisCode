@@ -12,8 +12,8 @@ class RenderNode:
 class DualTreeRenderer(Renderer):
 
   #default styling settings
-  NODE_RADIUS = 10
-  NODE_COLOR = Color.BLUE
+  NODE_RADIUS = 16
+  NODE_COLOR = Color.GRAY
   EDGE_WIDTH = 2
   EDGE_COLOR = Color.PURPLE
   FONT = DEFAULT_FONT
@@ -30,6 +30,7 @@ class DualTreeRenderer(Renderer):
     kwargs['stretch'] = True
     super().__init__(
       content,
+      title = "Dual Tree",
       internal_content_padding = Vector2(node_radius, node_radius),
       **kwargs)
     self.node_radius = node_radius
