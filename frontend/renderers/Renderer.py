@@ -1,7 +1,20 @@
 from abc import ABC, abstractmethod
 from pygame.math import Vector2
 import pygame
+from Utils import vec2_to_renderpos, vec2_to_tuple
 from frontend.Gobals import Color, DEFAULT_FONT
+from dataclasses import dataclass
+from typing import Generic, TypeVar, Callable
+from frontend.renderers.RenderPos import RenderPos
+
+
+T = TypeVar('T', bound='Interactable')
+@dataclass
+class Interactable(Generic[T]):
+  reference: T
+  pos: RenderPos
+  size: RenderPos
+  
 
 class Renderer(ABC):
 
@@ -38,8 +51,7 @@ class Renderer(ABC):
     self.outline_rect = None
     self.outline_color = outline_color
     self.outline_width = outline_width
-    if outline and outline_width > 0:
-      self.outline_rect = pygame.Rect(anchor.x, anchor.y, bounds.x, bounds.y)
+    self.outline_rect = pygame.Rect(anchor.x, anchor.y, bounds.x, bounds.y)
     
   def _post_init(self):
     self.content_size = self._get_content_size()
@@ -58,8 +70,7 @@ class Renderer(ABC):
 
 
   @abstractmethod
-  def update_content(self, content: any):
-    self.content = content
+  def update_content(self):
     self.content_size = self._get_content_size()
     self.content_scale = self._calculate_content_scale()
 
@@ -79,9 +90,13 @@ class Renderer(ABC):
     return content_scale
   
   @abstractmethod
-  def _project_position(self, pos: Vector2) -> tuple[int,int]:
+  def _project_position(self, pos: Vector2) -> RenderPos:
     #content scaling and anchoring
     pos = (pos.elementwise() * self.content_scale) + self.content_anchor
     #convert to tuple for pygame
-    projected_pos_t = (int(pos.x), int(pos.y))
+    projected_pos_t: RenderPos = RenderPos.from_vector2(pos)
     return projected_pos_t
+  
+  @abstractmethod
+  def get_interables(self) -> list[Interactable]:
+    pass

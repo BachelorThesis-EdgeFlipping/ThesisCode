@@ -1,4 +1,9 @@
 from data_structures.Triangulation import Triangulation, Face, HalfEdge
+from enum import Enum
+
+class RotationDirection(Enum):
+  LEFT = 1
+  RIGHT = 2
 
 class Node:
   def __init__(self, face: Face = None, parent: 'Node' = None):
@@ -54,7 +59,13 @@ class DualTree:
     if node.height != old_height:
       self._update_height(node.parent)
   
-  def rotate_left(self, node: Node):
+  def rotate(self, node: Node, direction: RotationDirection):
+    if direction == RotationDirection.LEFT:
+      self._rotate_left(node)
+    elif direction == RotationDirection.RIGHT:
+      self._rotate_right(node)
+
+  def _rotate_left(self, node: Node):
     if node is None or node.right is None:
       return
     new_root = node.right
@@ -74,7 +85,7 @@ class DualTree:
     node.parent = new_root
     self._update_height(node)
   
-  def rotate_right(self, node: Node):
+  def _rotate_right(self, node: Node):
     if node is None or node.left is None:
       return
     new_root = node.left 
@@ -96,11 +107,11 @@ class DualTree:
 
   def rotate_left_by_face_id(self, face_id: int):
     node = self._get_node_by_face_id(face_id)
-    self.rotate_left(node)
+    self._rotate_left(node)
 
   def rotate_right_by_face_id(self, face_id: int):
     node = self._get_node_by_face_id(face_id)
-    self.rotate_right(node)
+    self._rotate_right(node)
 
   def _get_node_by_face_id(self, face_id: int) -> Node:
     def _traverse(node: Node) -> Node:
@@ -113,6 +124,22 @@ class DualTree:
         return left_result
       return _traverse(node.right)
     return _traverse(self.root)
+
+  def find_rotation_candidate_by_face_ids(self, face_id1: int, face_id2: int) -> tuple[Node, RotationDirection]:
+    node1 = self._get_node_by_face_id(face_id1)
+    node2 = self._get_node_by_face_id(face_id2)
+    if node1 is None or node2 is None:
+      raise ValueError(f"One or both face IDs {face_id1}, {face_id2} not found in Dual Tree")
+    
+    if node1.right == node2:
+      return (node1, RotationDirection.LEFT)
+    elif node1.left == node2:
+      return (node1, RotationDirection.RIGHT)
+    elif node2.right == node1:
+      return (node2, RotationDirection.LEFT)
+    elif node2.left == node1:
+      return (node2, RotationDirection.RIGHT)
+    raise ValueError(f"Nodes with face IDs {face_id1} and {face_id2} are not adjacent in the Dual Tree")
 
   #########################
   #  Validation (AI-Code) #

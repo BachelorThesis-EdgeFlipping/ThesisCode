@@ -4,10 +4,13 @@ from pygame.math import Vector2
 from frontend.Gobals import Color
 from ParsingService import TriangulationParser
 import data_structures.Triangulation
+from frontend.input_handlers.TriangulationInputHandler import TriangulationInputHandler
+from frontend.input_handlers.InputHandler import InputHandler
 from frontend.renderers.Renderer import Renderer
 from frontend.renderers.TriangulationRenderer import TriangulationRenderer
 from data_structures.DualTree import DualTree
 from frontend.renderers.DualTreeRenderer import DualTreeRenderer
+from frontend.input_handlers.DualTreeInputHandler import DualTreeInputHandler
 from frontend.Gobals import DEFAULT_FONT
 import sys
 
@@ -16,12 +19,12 @@ import sys
 INPUT_FILE = f"{sys.argv[1]}.json" if len(sys.argv) > 1 else "test1.json"
 tri = TriangulationParser.parse(INPUT_FILE)
 tri_flip = copy.deepcopy(tri)
-tri_flip.flip_edge(0,2)
+tri_flip.flip_edge(2,6)
 tri_flip.sanity_check(len(tri_flip.vertices))
 d_tree = DualTree(tri)
 d_tree.sanity_check(tri)
 d_tree_rotated = DualTree(tri)
-d_tree_rotated.rotate_left_by_face_id(4)
+d_tree_rotated.rotate_left_by_face_id(2)
 
 pygame.init()
 
@@ -50,11 +53,29 @@ renderers.append(DualTreeRenderer(
     content=d_tree,
     anchor=Vector2(700, 50),
     bounds=Vector2(300, 300),
+    margin=Vector2(20, 20),
 ))
 renderers.append(DualTreeRenderer(
     content=d_tree_rotated,
     anchor=Vector2(700, 400),
-    bounds=Vector2(300, 300)
+    bounds=Vector2(300, 300),
+    margin=Vector2(20, 20),
+))
+
+#--Input Handlers--
+input_handlers: list[InputHandler] = []
+
+input_handlers.append(TriangulationInputHandler(
+    renderer=renderers[0]  # TriangulationRenderer for tri
+))
+input_handlers.append(TriangulationInputHandler(
+    renderer=renderers[1]  # TriangulationRenderer for tri_flip
+))
+input_handlers.append(DualTreeInputHandler(
+    renderer=renderers[2]  # DualTreeRenderer for d_tree
+))
+input_handlers.append(DualTreeInputHandler(
+    renderer=renderers[3]  # DualTreeRenderer for d_tree_rotated
 ))
 
 font = DEFAULT_FONT
@@ -70,6 +91,8 @@ while running:
     elif event.type == pygame.KEYDOWN:
       if event.key == pygame.K_ESCAPE:
         running = False
+    for handler in input_handlers:
+      handler.handle_event(event)
 
   #LOGIC
 
