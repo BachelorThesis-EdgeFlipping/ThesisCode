@@ -1,3 +1,4 @@
+from SyncNetwork import Syncable
 from data_structures.Triangulation import Triangulation, Face, HalfEdge
 from enum import Enum
 
@@ -13,7 +14,7 @@ class Node:
     self.right = None
     self.height = 0
 
-class DualTree:
+class DualTree(Syncable):
   def __init__(self, tri: Triangulation = None, root_edge: tuple[int, int] = (0,1)):
     #meta data for rendering
     self.node_count = 0
@@ -52,12 +53,10 @@ class DualTree:
   def _update_height(self, node: Node):
     if node is None:
       return
-    old_height = node.height
     left_height = node.left.height if node.left else -1
     right_height = node.right.height if node.right else -1
     node.height = 1 + max(left_height, right_height)
-    if node.height != old_height:
-      self._update_height(node.parent)
+    self._update_height(node.parent)
   
   def rotate(self, node: Node, direction: RotationDirection):
     if direction == RotationDirection.LEFT:
@@ -85,24 +84,35 @@ class DualTree:
     node.parent = new_root
     self._update_height(node)
   
+  #not a standard tree rotation. shifts children right to match triangulation flip behavior
   def _rotate_right(self, node: Node):
     if node is None or node.left is None:
       return
-    new_root = node.left 
-    node.left = new_root.right 
-    if new_root.right:
-      new_root.right.parent = node
-    new_root.right = node
-    if node.parent is None:
-      self.root = new_root
-      new_root.parent = None
-    else:
-      if node.parent.left == node:
-        node.parent.left = new_root
-      else:
-        node.parent.right = new_root
-      new_root.parent = node.parent
-    node.parent = new_root
+    old_left = node.left  # This will become the right child
+    old_right = node.right  # This needs to move to old_left's right
+    
+    # node's left becomes None (old_left.right was the subtree that would go here,
+    # but for dual tree consistency with triangulation flip, it stays with old_left)
+    node.left = None
+    
+    # old_left keeps its left subtree (old_left.left stays)
+    # old_left's right becomes node's old right child
+    old_left_old_right = old_left.right
+    old_left.right = old_right
+    if old_right:
+      old_right.parent = old_left
+    
+    # old_left's old right subtree becomes old_left's left 
+    # (shifting: old_left.left was None, old_left.right had the subtree)
+    old_left.left = old_left_old_right
+    if old_left_old_right:
+      old_left_old_right.parent = old_left
+    
+    # old_left becomes node's right child
+    node.right = old_left
+    old_left.parent = node
+    
+    self._update_height(old_left)
     self._update_height(node)
 
   def rotate_left_by_face_id(self, face_id: int):
@@ -130,7 +140,6 @@ class DualTree:
     node2 = self._get_node_by_face_id(face_id2)
     if node1 is None or node2 is None:
       raise ValueError(f"One or both face IDs {face_id1}, {face_id2} not found in Dual Tree")
-    
     if node1.right == node2:
       return (node1, RotationDirection.LEFT)
     elif node1.left == node2:
@@ -140,6 +149,25 @@ class DualTree:
     elif node2.left == node1:
       return (node2, RotationDirection.RIGHT)
     raise ValueError(f"Nodes with face IDs {face_id1} and {face_id2} are not adjacent in the Dual Tree")
+
+  def get_face_ids_from_rotation(self, node: Node, direction: RotationDirection) -> tuple[int, int]:
+    if direction == RotationDirection.LEFT:
+      if node.right is None:
+        raise ValueError("Cannot get face IDs for left rotation: right child is None")
+      return (node.face.id, node.right.face.id)
+    elif direction == RotationDirection.RIGHT:
+      if node.left is None:
+        raise ValueError("Cannot get face IDs for right rotation: left child is None")
+      return (node.face.id, node.left.face.id)
+    else:
+      raise ValueError("Invalid rotation direction")
+
+  #######################
+  #   Syncable method   #
+  #######################
+  def sync(self, face_id1: int, face_id2: int):
+    node, direction = self.find_rotation_candidate_by_face_ids(face_id1, face_id2)
+    self.rotate(node, direction)
 
   #########################
   #  Validation (AI-Code) #
@@ -208,3 +236,30 @@ class DualTree:
     # Check depth property matches root height
     if self.depth != (self.root.height if self.root else 0):
       raise ValueError(f"Depth property mismatch: root height is {self.root.height if self.root else 0}, property returns {self.depth}")
+    # Check that tree edges correspond to triangulation adjacencies
+    def check_adjacencies(node: Node):
+      if node is None:
+        return
+      current_face = node.face
+      # Get all adjacent faces in the triangulation
+      adjacent_faces = set()
+      he = current_face.half_edge
+      start = he
+      while True:
+        if he.twin.face != tri._outer_face:
+          adjacent_faces.add(he.twin.face)
+        he = he.next
+        if he == start:
+          break
+      # Check children are adjacent
+      if node.left is not None:
+        if node.left.face not in adjacent_faces:
+          raise ValueError(f"Left child face {node.left.face.id} is not adjacent to face {current_face.id}")
+      if node.right is not None:
+        if node.right.face not in adjacent_faces:
+          raise ValueError(f"Right child face {node.right.face.id} is not adjacent to face {current_face.id}")
+      # Recurse
+      check_adjacencies(node.left)
+      check_adjacencies(node.right)
+    
+    check_adjacencies(self.root)

@@ -1,6 +1,7 @@
 import pygame
 import copy
 from pygame.math import Vector2
+from SyncNetwork import SyncNetwork
 from frontend.Gobals import Color
 from ParsingService import TriangulationParser
 import data_structures.Triangulation
@@ -18,13 +19,8 @@ import sys
 #TEMP CODE FOR TESTING
 INPUT_FILE = f"{sys.argv[1]}.json" if len(sys.argv) > 1 else "test1.json"
 tri = TriangulationParser.parse(INPUT_FILE)
-tri_flip = copy.deepcopy(tri)
-tri_flip.flip_edge(2,6)
-tri_flip.sanity_check(len(tri_flip.vertices))
 d_tree = DualTree(tri)
 d_tree.sanity_check(tri)
-d_tree_rotated = DualTree(tri)
-d_tree_rotated.rotate_left_by_face_id(2)
 
 pygame.init()
 
@@ -34,49 +30,36 @@ pygame.display.set_caption("Sequential Squishing")
 
 #--Renderers--
 renderers: list[Renderer] = []
-
 renderers.append(TriangulationRenderer(
     content=tri,
-    anchor=Vector2(50, 50),
-    bounds=Vector2(300, 300),
-    margin=Vector2(20, 20),
-    fill=True
-))
-renderers.append(TriangulationRenderer(
-    content=tri_flip,
-    anchor=Vector2(50, 400),
-    bounds=Vector2(300, 300),
+    anchor=Vector2(20, 50),
+    bounds=Vector2(600, 600),
     margin=Vector2(20, 20),
     fill=True
 ))
 renderers.append(DualTreeRenderer(
     content=d_tree,
-    anchor=Vector2(700, 50),
-    bounds=Vector2(300, 300),
+    anchor=Vector2(640, 50),
+    bounds=Vector2(600, 600),
     margin=Vector2(20, 20),
 ))
-renderers.append(DualTreeRenderer(
-    content=d_tree_rotated,
-    anchor=Vector2(700, 400),
-    bounds=Vector2(300, 300),
-    margin=Vector2(20, 20),
-))
+
+#--Sync Network--
+sync_network = SyncNetwork()
+sync_network.register(renderers[0])  # Triangulation
+sync_network.register(renderers[1])  # DualTree
 
 #--Input Handlers--
 input_handlers: list[InputHandler] = []
+input_handlers.append(TriangulationInputHandler(
+    renderer=renderers[0],  # TriangulationRenderer for tri
+    sync_network=sync_network
+))
+input_handlers.append(DualTreeInputHandler(
+    renderer=renderers[1],  # DualTreeRenderer for d_tree
+    sync_network=sync_network
+))
 
-input_handlers.append(TriangulationInputHandler(
-    renderer=renderers[0]  # TriangulationRenderer for tri
-))
-input_handlers.append(TriangulationInputHandler(
-    renderer=renderers[1]  # TriangulationRenderer for tri_flip
-))
-input_handlers.append(DualTreeInputHandler(
-    renderer=renderers[2]  # DualTreeRenderer for d_tree
-))
-input_handlers.append(DualTreeInputHandler(
-    renderer=renderers[3]  # DualTreeRenderer for d_tree_rotated
-))
 
 font = DEFAULT_FONT
 
@@ -94,14 +77,8 @@ while running:
     for handler in input_handlers:
       handler.handle_event(event)
 
-  #LOGIC
-
   #RENDER
   screen.fill(Color.WHITE.value)
-
-  #--triangulation rendering--
-
-  #--test renderer--
   for renderer in renderers:
     renderer.render(screen)
 

@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 from pygame.math import Vector2
 import pygame
-from Utils import vec2_to_renderpos, vec2_to_tuple
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+  from SyncNetwork import Syncable
 from frontend.Gobals import Color, DEFAULT_FONT
 from dataclasses import dataclass
 from typing import Generic, TypeVar, Callable
@@ -25,7 +28,7 @@ class Renderer(ABC):
   TITLE_COLOR = Color.BLACK
 
   def __init__(self, 
-              content: any,
+              content: 'Syncable',
               anchor: Vector2, 
               bounds: Vector2, 
               title: str = "",
@@ -38,7 +41,7 @@ class Renderer(ABC):
               outline: bool = True, 
               outline_color: Color = OUTLINE_COLOR,
               outline_width: int = OUTLINE_WIDTH):
-    self.content = content
+    self.content: Syncable = content
     self.title = title
     self.title_font = title_font
     self.title_color = title_color

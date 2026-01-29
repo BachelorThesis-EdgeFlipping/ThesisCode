@@ -23,13 +23,16 @@ class RenderFace:
 class TriangulationRenderer(Renderer):
 
   #default styling settings
-  VERTEX_RADIUS = 10
+  VERTEX_RADIUS = 14
   VERTEX_COLOR = Color.BLUE
   EDGE_WIDTH = 2
-  EDGE_COLOR = Color.PURPLE
-  FACE_COLOR = Color.GRAY
+  EDGE_COLOR = Color.LIGHT_BLUE
+  FACE_COLOR = Color.CORAL
+  FACE_BACKGROUND_COLOR = Color.LIGHT_YELLOW
+  FACE_BACKGROUND_RADIUS = 10
   SHOW_VERTEX_IDS = True
   SHOW_FACE_IDS = True
+  SHOW_FACE_BACKGROUND = True
   FONT = DEFAULT_FONT
 
   def __init__(self, 
@@ -39,8 +42,11 @@ class TriangulationRenderer(Renderer):
               edge_width: int = EDGE_WIDTH,
               edge_color: Color = EDGE_COLOR,
               face_color: Color = FACE_COLOR,
+              face_background_color: Color = FACE_BACKGROUND_COLOR,
+              face_background_radius: int = FACE_BACKGROUND_RADIUS,
               show_vertex_ids: bool = SHOW_VERTEX_IDS,
               show_face_ids: bool = SHOW_FACE_IDS,
+              show_face_background: bool = SHOW_FACE_BACKGROUND,
               font: pygame.font.Font = FONT,
               **kwargs):
     super().__init__(
@@ -53,8 +59,11 @@ class TriangulationRenderer(Renderer):
     self.edge_width = edge_width
     self.edge_color = edge_color
     self.face_color = face_color
+    self.face_background_color = face_background_color
+    self.face_background_radius = face_background_radius
     self.show_vertex_ids = show_vertex_ids
     self.show_face_ids = show_face_ids
+    self.show_face_background = show_face_background
     self.font = font
     #Render Cache
     self._render_nodes: list[RenderNode] = []
@@ -111,6 +120,8 @@ class TriangulationRenderer(Renderer):
     for face in self._render_faces:
       projected_centroid: RenderPos = self._project_position(face.position)
       if self.show_face_ids:
+        if self.show_face_background:
+          pygame.draw.circle(screen, self.face_background_color.value, projected_centroid.tuple(), self.face_background_radius)
         img = self.font.render(str(face.face.id), True, self.face_color.value)
         screen.blit(img, (projected_centroid.x - img.get_width() // 2, projected_centroid.y - img.get_height() // 2))
 

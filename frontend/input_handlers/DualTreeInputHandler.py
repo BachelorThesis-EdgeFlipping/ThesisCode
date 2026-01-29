@@ -5,8 +5,8 @@ import pygame
 
 class DualTreeInputHandler(InputHandler):
 
-  def __init__(self, renderer: DualTreeRenderer):
-    super().__init__(renderer)
+  def __init__(self, renderer: DualTreeRenderer, sync_network = None):
+    super().__init__(renderer, sync_network)
     self.selected_node: Node = None
 
   def handle_event(self, event: any):
@@ -22,12 +22,16 @@ class DualTreeInputHandler(InputHandler):
     if(event.type == pygame.KEYDOWN):
       if event.key == pygame.K_LEFT:
         if self.selected_node is not None:
+          face_id1, face_id2 = self.renderer.content.get_face_ids_from_rotation(self.selected_node, RotationDirection.LEFT)
           self.renderer.content.rotate(self.selected_node, RotationDirection.LEFT)
           self.renderer.update_content()
+          self.sync_network.sync_others(self.renderer.content, face_id1, face_id2)
       if event.key == pygame.K_RIGHT:
         if self.selected_node is not None:
+          face_id1, face_id2 = self.renderer.content.get_face_ids_from_rotation(self.selected_node, RotationDirection.RIGHT)
           self.renderer.content.rotate(self.selected_node, RotationDirection.RIGHT)
           self.renderer.update_content()
+          self.sync_network.sync_others(self.renderer.content, face_id1, face_id2)
 
   def _on_unfocus(self):
     self.selected_node = None

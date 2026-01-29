@@ -6,8 +6,8 @@ from collections import deque
 
 class TriangulationInputHandler(InputHandler):
 
-  def __init__(self, renderer: DualTreeRenderer):
-    super().__init__(renderer)
+  def __init__(self, renderer: DualTreeRenderer, sync_network = None):
+    super().__init__(renderer, sync_network)
     self.selected_nodes: Vertex = deque(maxlen=2)
 
   def handle_event(self, event: any):
@@ -22,10 +22,12 @@ class TriangulationInputHandler(InputHandler):
     if(event.type == pygame.KEYDOWN):
       if event.key == pygame.K_SPACE:
         if len(self.selected_nodes) == 2:
-          n1 = self.selected_nodes.popleft()
-          n2 = self.selected_nodes.popleft()
+          n1: Vertex = self.selected_nodes.popleft()
+          n2: Vertex = self.selected_nodes.popleft()
+          face_id1, face_id2 = self.renderer.content.get_face_ids_adjacent_to_edge(n1.id, n2.id)
           self.renderer.content.flip_edge(n1.id, n2.id)
           self.renderer.update_content()
+          self.sync_network.sync_others(self.renderer.content, face_id1, face_id2)
 
   def _on_unfocus(self):
     self.selected_nodes.clear()

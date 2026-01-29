@@ -1,6 +1,8 @@
 
 from pygame.math import Vector2
 
+from SyncNetwork import Syncable
+
 class Vertex: 
   def __init__(self, x, y, id):
     self.id: int = id
@@ -25,7 +27,7 @@ class HalfEdge:
     self.prev: 'HalfEdge' = None
     self.face: Face = None #CCW
 
-class Triangulation:
+class Triangulation(Syncable):
   def __init__(self):
     self.center = ConnectionError
     self.vertices = []
@@ -137,6 +139,40 @@ class Triangulation:
     face1.half_edge = twin
     face2.half_edge = he
     return True
+  
+  def _find_flip_candidate_by_face_ids(self, face1_id: int, face2_id: int) -> tuple[int,int]:
+    face1 = self.faces[face1_id]
+    face2 = self.faces[face2_id]
+    shared_he = self._find_shared_he_between_faces(face1, face2)
+    return (shared_he.origin.id, shared_he.twin.origin.id)
+
+  def _find_shared_he_between_faces(self, face1: Face, face2: Face) -> HalfEdge:
+    start_he = face1.half_edge
+    cur = start_he
+    max_iterations = len(self.half_edges) + 1
+    count = 0
+    while count < max_iterations:
+      count += 1
+      if cur.twin.face == face2:
+        return cur
+      cur = cur.next
+      if cur == start_he:
+        break
+    raise ValueError(f"No shared half-edge found between faces {face1.id} and {face2.id}")
+  
+  def get_face_ids_adjacent_to_edge(self, v1_id: int, v2_id: int) -> tuple[int,int]:
+    he = self.find_edge_by_ids(v1_id, v2_id)
+    face1_id = he.face.id
+    face2_id = he.twin.face.id
+    return (face1_id, face2_id)
+
+  #######################
+  #   Syncable method   #
+  #######################
+
+  def sync(self, face_id1: int, face_id2: int):
+    v1_id, v2_id = self._find_flip_candidate_by_face_ids(face_id1, face_id2)
+    self.flip_edge(v1_id, v2_id)
 
   #####################
   #  Factory methods  #

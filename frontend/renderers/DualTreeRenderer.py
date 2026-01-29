@@ -10,17 +10,19 @@ class RenderNode:
     self.node: Node = node
     self.position: Vector2 = position #center possition
 class RenderEdge:
-  def __init__(self, from_node: RenderNode, to_node: RenderNode):
+  def __init__(self, from_node: RenderNode, to_node: RenderNode, is_left: bool = True):
     self.from_node = from_node
     self.to_node = to_node
+    self.is_left = is_left
 
 class DualTreeRenderer(Renderer):
 
   #default styling settings
   NODE_RADIUS = 16
-  NODE_COLOR = Color.GRAY
+  NODE_COLOR = Color.CORAL
   EDGE_WIDTH = 2
-  EDGE_COLOR = Color.PURPLE
+  LEFT_EDGE_COLOR = Color.LIGHT_BLUE
+  RIGHT_EDGE_COLOR = Color.LIGHT_SALMON
   FONT = DEFAULT_FONT
 
   def __init__(self, 
@@ -28,7 +30,8 @@ class DualTreeRenderer(Renderer):
               node_radius: int = NODE_RADIUS,
               node_color: Color = NODE_COLOR,
               edge_width: int = EDGE_WIDTH,
-              edge_color: Color = EDGE_COLOR,
+              left_edge_color: Color = LEFT_EDGE_COLOR,
+              right_edge_color: Color = RIGHT_EDGE_COLOR,
               font: pygame.font.Font = FONT,
               **kwargs):
     kwargs['fill'] = True
@@ -41,7 +44,8 @@ class DualTreeRenderer(Renderer):
     self.node_radius = node_radius
     self.node_color = node_color
     self.edge_width = edge_width
-    self.edge_color = edge_color
+    self.left_edge_color = left_edge_color
+    self.right_edge_color = right_edge_color
     self.font = font
     #rendering meta-data
     self._nodes_count = self.content.node_count
@@ -80,9 +84,9 @@ class DualTreeRenderer(Renderer):
     self._render_nodes.append(render_node)
     #add render edge
     if left_render_node:
-      self._render_edges.append(RenderEdge(render_node, left_render_node))
+      self._render_edges.append(RenderEdge(render_node, left_render_node, is_left=True))
     if right_render_node:
-      self._render_edges.append(RenderEdge(render_node, right_render_node))
+      self._render_edges.append(RenderEdge(render_node, right_render_node, is_left=False))
     return render_node
 
   def render(self, screen: pygame.Surface):
@@ -90,7 +94,8 @@ class DualTreeRenderer(Renderer):
     for edge in self._render_edges:
       from_pos: RenderPos = self._project_position(edge.from_node.position)
       to_pos: RenderPos = self._project_position(edge.to_node.position)
-      pygame.draw.line(screen, self.edge_color.value, from_pos.tuple(), to_pos.tuple(), self.edge_width)
+      edge_color = self.left_edge_color if edge.is_left else self.right_edge_color
+      pygame.draw.line(screen, edge_color.value, from_pos.tuple(), to_pos.tuple(), self.edge_width)
     for render_node in self._render_nodes:
       pos: RenderPos = self._project_position(render_node.position)
       pygame.draw.circle(screen, self.node_color.value, pos.tuple(), self.node_radius)
