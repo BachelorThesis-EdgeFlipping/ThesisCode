@@ -14,7 +14,7 @@ class Node:
     self.right = None
     self.height = 0
 
-class DualTree(Syncable):
+class BinaryTree(Syncable):
   def __init__(self, tri: Triangulation = None, root_edge: tuple[int, int] = (0,1)):
     #meta data for rendering
     self.node_count = 0
@@ -84,34 +84,24 @@ class DualTree(Syncable):
     node.parent = new_root
     self._update_height(node)
   
-  #not a standard tree rotation. shifts children right to match triangulation flip behavior
   def _rotate_right(self, node: Node):
     if node is None or node.left is None:
       return
-    old_left = node.left  # This will become the right child
-    old_right = node.right  # This needs to move to old_left's right
-    
-    # node's left becomes None (old_left.right was the subtree that would go here,
-    # but for dual tree consistency with triangulation flip, it stays with old_left)
-    node.left = None
-    
-    # old_left keeps its left subtree (old_left.left stays)
-    # old_left's right becomes node's old right child
-    old_left_old_right = old_left.right
+    old_left = node.left
+    old_right = node.right
+    old_left_left = old_left.left
+    old_left_right = old_left.right
+    node.left = old_left_left
+    if old_left_left:
+      old_left_left.parent = node
+    old_left.left = old_left_right
+    if old_left_right:
+      old_left_right.parent = old_left
     old_left.right = old_right
     if old_right:
       old_right.parent = old_left
-    
-    # old_left's old right subtree becomes old_left's left 
-    # (shifting: old_left.left was None, old_left.right had the subtree)
-    old_left.left = old_left_old_right
-    if old_left_old_right:
-      old_left_old_right.parent = old_left
-    
-    # old_left becomes node's right child
     node.right = old_left
     old_left.parent = node
-    
     self._update_height(old_left)
     self._update_height(node)
 
@@ -139,7 +129,7 @@ class DualTree(Syncable):
     node1 = self._get_node_by_face_id(face_id1)
     node2 = self._get_node_by_face_id(face_id2)
     if node1 is None or node2 is None:
-      raise ValueError(f"One or both face IDs {face_id1}, {face_id2} not found in Dual Tree")
+      raise ValueError(f"One or both face IDs {face_id1}, {face_id2} not found in Binary Tree")
     if node1.right == node2:
       return (node1, RotationDirection.LEFT)
     elif node1.left == node2:
@@ -148,7 +138,7 @@ class DualTree(Syncable):
       return (node2, RotationDirection.LEFT)
     elif node2.left == node1:
       return (node2, RotationDirection.RIGHT)
-    raise ValueError(f"Nodes with face IDs {face_id1} and {face_id2} are not adjacent in the Dual Tree")
+    raise ValueError(f"Nodes with face IDs {face_id1} and {face_id2} are not adjacent in the Binary Tree")
 
   def get_face_ids_from_rotation(self, node: Node, direction: RotationDirection) -> tuple[int, int]:
     if direction == RotationDirection.LEFT:

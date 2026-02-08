@@ -1,6 +1,6 @@
 from frontend.renderers.RenderPos import RenderPos
 from .Renderer import Interactable, Renderer
-from data_structures.DualTree import DualTree, Node
+from data_structures.BinaryTree import BinaryTree, Node
 import pygame
 from pygame.math import Vector2
 from frontend.Gobals import Color, DEFAULT_FONT
@@ -15,7 +15,7 @@ class RenderEdge:
     self.to_node = to_node
     self.is_left = is_left
 
-class DualTreeRenderer(Renderer):
+class BinaryTreeRenderer(Renderer):
 
   #default styling settings
   NODE_RADIUS = 16
@@ -26,7 +26,8 @@ class DualTreeRenderer(Renderer):
   FONT = DEFAULT_FONT
 
   def __init__(self, 
-              content: DualTree, 
+              content: BinaryTree, 
+              title: str = "",
               node_radius: int = NODE_RADIUS,
               node_color: Color = NODE_COLOR,
               edge_width: int = EDGE_WIDTH,
@@ -38,7 +39,7 @@ class DualTreeRenderer(Renderer):
     kwargs['stretch'] = True
     super().__init__(
       content,
-      title = "Dual Tree",
+      title = "Binary Tree" + (": " + title if title else ""),
       internal_content_padding = Vector2(node_radius, node_radius),
       **kwargs)
     self.node_radius = node_radius
@@ -58,9 +59,9 @@ class DualTreeRenderer(Renderer):
 
   def _post_init(self):
     super()._post_init()
-    self._calculate_dual_tree()
+    self._calculate_Binary_tree()
 
-  def _calculate_dual_tree(self):
+  def _calculate_Binary_tree(self):
     self._global_node_index = 0
     self._render_nodes = []
     self._render_edges = []
@@ -109,7 +110,7 @@ class DualTreeRenderer(Renderer):
     super().update_content()
     self._nodes_count = self.content.node_count
     self._max_depth = self.content.depth
-    self._calculate_dual_tree()
+    self._calculate_Binary_tree()
   
   def _project_position(self, pos):
     return super()._project_position(pos)

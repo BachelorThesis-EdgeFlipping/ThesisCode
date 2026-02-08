@@ -37,6 +37,7 @@ class TriangulationRenderer(Renderer):
 
   def __init__(self, 
               content: Triangulation, 
+              title: str = "",
               vertex_radius: int = VERTEX_RADIUS,
               vertex_color: Color = VERTEX_COLOR,
               edge_width: int = EDGE_WIDTH,
@@ -52,7 +53,7 @@ class TriangulationRenderer(Renderer):
     super().__init__(
       content,
       internal_content_padding = Vector2(vertex_radius, vertex_radius),
-      title = "Triangulation",
+      title = "Triangulation" + (": " + title if title else ""),
       **kwargs)
     self.vertex_radius = vertex_radius
     self.vertex_color = vertex_color

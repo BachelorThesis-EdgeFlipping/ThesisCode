@@ -12,4 +12,4 @@ class DependencyDAG:
 
   def __init__(self, input : SequentialSolutionPolygon):
     for flip in input.steps:
-      self.
+      
