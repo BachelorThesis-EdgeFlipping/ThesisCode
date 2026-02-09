@@ -1,4 +1,4 @@
-##### WIP utility python code for the thesis
+### WIP utility python code for the thesis
 Interface currently supports the following edge-flips ismophisms:
 - Triangulation <-> Binary Tree
 
