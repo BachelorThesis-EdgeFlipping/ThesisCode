@@ -248,8 +248,12 @@ class Triangulation(Syncable):
     return flippable
 
   #return all independent subsets of flippable edges (including non-maximal sets)
-  def get_independent_flip_sets(self) -> list[list[Edge]]:
+  def get_independent_flip_sets(self, ignore_edges: set[Edge] = None) -> list[list[Edge]]:
     flippable = self.get_flippable_edges()
+    #filter out ignored edges
+    if ignore_edges is not None and len(ignore_edges) > 0:
+      ignored_edges_normalized: set[Edge] = set(map(lambda e: (min(e[0], e[1]), max(e[0], e[1])), ignore_edges))
+      flippable = [e for e in flippable if e not in ignored_edges_normalized]
     if not flippable:
       return []
     #precompute face pairs for each flippable edge
