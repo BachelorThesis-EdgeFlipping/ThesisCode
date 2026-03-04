@@ -12,10 +12,16 @@ class ImportModel:
 
 @dataclass_json
 @dataclass
-class PolygonTriangulation(ImportModel): 
+class RegularPolygonTriangulation(ImportModel): 
   order: int #starting at 0 at the top center
   internal_edges: list[Edge]
   projection_size: int = 200
+
+@dataclass_json
+@dataclass
+class PointSetTriangulation(ImportModel):
+  vertices: list[tuple[int, int]]
+  edges: list[Edge] #list of edges as tuples of vertex indices
 
 @dataclass_json
 @dataclass

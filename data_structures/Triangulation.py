@@ -1,6 +1,8 @@
 
 from pygame.math import Vector2
+import math
 
+from Models import Edge
 from SyncNetwork import Syncable
 
 class Vertex: 
@@ -21,7 +23,7 @@ class Face:
   
 class HalfEdge:
   def __init__(self, origin: Vertex):
-    self.origin = origin
+    self.origin: Vertex = origin
     self.twin: 'HalfEdge' = None
     self.next: 'HalfEdge' = None
     self.prev: 'HalfEdge' = None
@@ -34,6 +36,55 @@ class Triangulation(Syncable):
     self.half_edges = []
     self.faces = []
     self._outer_face = None
+
+  def deep_copy(self) -> 'Triangulation':
+    copy = Triangulation()
+    for v in self.vertices:
+      copy.vertices.append(Vertex(v.x, v.y, v.id))
+    for f in self.faces:
+      copy.faces.append(Face(f.id))
+    he_map: dict[int, HalfEdge] = {}
+    for he in self.half_edges:
+      new_he = HalfEdge(copy.vertices[he.origin.id])
+      new_he.face = copy.faces[he.face.id]
+      he_map[id(he)] = new_he
+      copy.half_edges.append(new_he)
+    #link twin, next, prev
+    for he in self.half_edges:
+      new_he = he_map[id(he)]
+      if he.twin is not None:
+        new_he.twin = he_map[id(he.twin)]
+      if he.next is not None:
+        new_he.next = he_map[id(he.next)]
+      if he.prev is not None:
+        new_he.prev = he_map[id(he.prev)]
+    #l ink vertex.half_edge
+    for v in self.vertices:
+      if v.half_edge is not None:
+        copy.vertices[v.id].half_edge = he_map[id(v.half_edge)]
+    #link face.half_edge
+    for f in self.faces:
+      if f.half_edge is not None:
+        copy.faces[f.id].half_edge = he_map[id(f.half_edge)]
+    #outer face
+    if self._outer_face is not None:
+      copy._outer_face = copy.faces[self._outer_face.id]
+    return copy
+
+  #return a set of undirected edges for hashing and equality checks
+  def edge_set(self) -> frozenset[tuple[int, int]]:
+    edges = set()
+    for he in self.half_edges:
+      a, b = he.origin.id, he.twin.origin.id
+      edges.add((min(a, b), max(a, b)))
+    return frozenset(edges)
+
+  def __hash__(self) -> int:
+    return hash(self.edge_set())
+
+  def __eq__(self, other: 'Triangulation') -> bool:
+    return self.edge_set() == other.edge_set()
+
   #################
   #  API methods  #
   #################
@@ -41,7 +92,7 @@ class Triangulation(Syncable):
     he_start, he_end = self._find_he_in_common_face(v1_id, v2_id)
     self._split_face(he_start, he_end)
 
-  def initialize_polygon(self, points:list[tuple[float,float]]):
+  def initialize_regular_polygon(self, points:list[tuple[float,float]]):
     n = len(points)
     if n < 3:
       raise ValueError("At least 3 points are required to form a polygon convex hull")
@@ -72,6 +123,70 @@ class Triangulation(Syncable):
       outer_edges[i].next = outer_edges[(i - 1) % n]
       outer_edges[i].prev = outer_edges[(i + 1) % n]
 
+  def initialize_from_edges(self, points: list[tuple[int, int]], edges: list[tuple[int, int]]):
+    #create vertices
+    for i, (x, y) in enumerate(points):
+      self._create_vertex(x, y)
+    #create he pairs for every edge
+    outgoing: dict[int, list[HalfEdge]] = {v: [] for v in range(len(points))}
+    for v1_id, v2_id in edges:
+      v1 = self.vertices[v1_id]
+      v2 = self.vertices[v2_id]
+      he = HalfEdge(v1)
+      twin = HalfEdge(v2)
+      he.twin = twin
+      twin.twin = he
+      self.half_edges.append(he)
+      self.half_edges.append(twin)
+      outgoing[v1_id].append(he)
+      outgoing[v2_id].append(twin)
+    #sort outgoing he's CCW around each vertex and link prev and next
+    for v_id, he_list in outgoing.items():
+      origin = self.vertices[v_id]
+      #sort by angle from vertex to the edges target
+      def angle_to_target(he: HalfEdge) -> float:
+        target = he.twin.origin
+        return math.atan2(target.y - origin.y, target.x - origin.x)
+      he_list.sort(key=angle_to_target)
+      origin.half_edge = he_list[0]
+      n = len(he_list)
+      for i in range(n):
+        #link CCW neighbors. arriving via e_{i+1}.twin, leave via e_i
+        he_list[(i + 1) % n].twin.next = he_list[i]
+        he_list[i].prev = he_list[(i + 1) % n].twin
+    #discover faces
+    visited = set()
+    for he in self.half_edges:
+      if id(he) in visited:
+        continue
+      face = self._create_face()
+      face.half_edge = he
+      curr = he
+      signed_area = 0.0
+      while True:
+        curr.face = face
+        visited.add(id(curr))
+        if curr.origin.half_edge is None:
+          curr.origin.half_edge = curr
+        #shoelace contribution
+        p1 = curr.origin
+        p2 = curr.twin.origin
+        signed_area += (p1.x * p2.y - p2.x * p1.y)
+        curr = curr.next
+        if curr == he:
+          break
+      #identify outer face by largest absolute signed area
+      abs_area = abs(signed_area)
+      if self._outer_face is None:
+        self._outer_face = face
+        self._outer_face_area = abs_area
+      elif abs_area > self._outer_face_area:
+        self._outer_face = face
+        self._outer_face_area = abs_area
+    #clean up temporary attribute
+    if hasattr(self, '_outer_face_area'):
+      del self._outer_face_area
+
   @staticmethod
   def find_edge(v_from: Vertex, v_to: Vertex) -> HalfEdge:
     cur = v_from.half_edge
@@ -89,10 +204,104 @@ class Triangulation(Syncable):
     v_to = self.vertices[v_to_id]
     return Triangulation.find_edge(v_from, v_to)
   
-  def flip_edge(self, v1_id: int, v2_id: int) -> bool:
+  def _cross_product(self, v1: Vertex, v2: Vertex, v3: Vertex) -> float:
+    #compute cross product of vectors (v1,v2) and (v1,v3)
+    return (v2.x - v1.x) * (v3.y - v1.y) - (v2.y - v1.y) * (v3.x - v1.x)
+  
+  def is_flippable(self, v1_id: int, v2_id: int) -> bool:
+    he = self.find_edge_by_ids(v1_id, v2_id)
+    # check if internal edge (not connected to outer face)
+    if he.face == self._outer_face or he.twin.face == self._outer_face:
+      return False
+    a = he.prev.origin
+    b = he.origin
+    c = he.next.origin
+    d = he.twin.prev.origin
+    #strict convex check: diagonals BC and AD must intersect
+    #A and D must rest on strictly opposite sides of line BC
+    if not self._opposite_sides(b, c, a, d):
+      return False
+    # B and C must rest on strictly opposite sides of line AD
+    if not self._opposite_sides(a, d, b, c):
+      return False
+    return True
+  
+  def _opposite_sides(self, a: Vertex, b: Vertex, c: Vertex, d: Vertex) -> bool:
+    #check if C and D are STRICTLY on opposite sides of AB
+    #fails for quasi-quadrilateral cases where one of the points is collinear with AB
+    cp1 = self._cross_product(a, b, c)
+    cp2 = self._cross_product(a, b, d)
+    return cp1 * cp2 < 0
+
+  #return list of edges (not half-edges) that are flipable 
+  def get_flippable_edges(self) -> list[Edge]:
+    flippable = []
+    seen = set()
+    for he in self.half_edges:
+      a, b = he.origin.id, he.twin.origin.id
+      key = (min(a, b), max(a, b))
+      if key in seen:
+        continue
+      seen.add(key)
+      if self.is_flippable(a, b):
+        flippable.append(key)
+    return flippable
+
+  #return all independent subsets of flippable edges (including non-maximal sets)
+  def get_independent_flip_sets(self) -> list[list[Edge]]:
+    flippable = self.get_flippable_edges()
+    if not flippable:
+      return []
+    #precompute face pairs for each flippable edge
+    edge_faces: list[tuple[int, int]] = []
+    for v1, v2 in flippable:
+      he = self.find_edge_by_ids(v1, v2)
+      edge_faces.append((he.face.id, he.twin.face.id))
+    n = len(flippable)
+    #enumerate all independent sets via backtracking
+    results: list[list[Edge]] = []
+    def backtrack(index: int, current: list[int], used_faces: set[int]):
+      if current:
+        results.append([flippable[i] for i in current])
+      for k in range(index, n):
+        f_a, f_b = edge_faces[k]
+        if f_a not in used_faces and f_b not in used_faces:
+          current.append(k)
+          used_faces.add(f_a)
+          used_faces.add(f_b)
+          backtrack(k + 1, current, used_faces)
+          current.pop()
+          used_faces.discard(f_a)
+          used_faces.discard(f_b)
+    backtrack(0, [], set())
+    results.sort(key=len, reverse=True)
+    return results
+
+  #expects a valid list of flips
+  def flip_edges_simultaneous(self, flip_list: list[Edge]) -> bool:
+    faces_involved = set()
+    for v1_id, v2_id in flip_list:
+      #verification phase (geometric validity)
+      if not self.is_flippable(v1_id, v2_id):
+        return False
+      he = self.find_edge_by_ids(v1_id, v2_id)
+      face1_id = he.face.id
+      face2_id = he.twin.face.id
+      #blocking condition (topological independence)
+      if face1_id in faces_involved or face2_id in faces_involved:
+        return False
+      faces_involved.add(face1_id)
+      faces_involved.add(face2_id)
+    #execution phase
+    for v1_id, v2_id in flip_list:
+      self.flip_edge(v1_id, v2_id, pre_verified=True)
+    return True
+
+  def flip_edge(self, v1_id: int, v2_id: int, pre_verified: bool = False) -> bool:
     he = self.find_edge_by_ids(v1_id, v2_id)
     twin = he.twin
-    if he.face == self._outer_face or twin.face == self._outer_face:
+    if not pre_verified:
+      if not self.is_flippable(v1_id, v2_id):
         return False
     # Store all neighbors before modification
     he_next = he.next
@@ -267,26 +476,28 @@ class Triangulation(Syncable):
   #########################
   #  Validation (AI Code) #
   #########################
-  def sanity_check(self, order: int):
-    # Vertex count
-    if len(self.vertices) != order:
-      raise ValueError(f"Expected {order} vertices, found {len(self.vertices)}")
-    # Face count: (order - 2) inner triangles + 1 outer face
-    expected_face_count = order - 2 + 1
-    if len(self.faces) != expected_face_count:
-      raise ValueError(f"Expected {expected_face_count} faces, found {len(self.faces)}")
-    # Half-edge count: 2*n boundary + 2*(n-3) internal = 4n - 6
-    expected_edge_count = 4 * order - 6
-    if len(self.half_edges) != expected_edge_count:
-      raise ValueError(f"Expected {expected_edge_count} half-edges, found {len(self.half_edges)}")    
-    # Check each face has correct edge count (3 for inner, order for outer)
+  def sanity_check(self):
+    V = len(self.vertices)
+    if V < 3:
+      raise ValueError(f"Expected at least 3 vertices, found {V}")
+    # Half-edge count must be even (every edge has a twin)
+    HE = len(self.half_edges)
+    if HE % 2 != 0:
+      raise ValueError(f"Half-edge count {HE} is not even")
+    E = HE // 2
+    F = len(self.faces)
+    # Euler's formula for planar graphs: V - E + F = 2
+    euler = V - E + F
+    if euler != 2:
+      raise ValueError(f"Euler's formula violated: V({V}) - E({E}) + F({F}) = {euler}, expected 2")
+    # Check each face has correct edge count (3 for inner faces, any for outer)
     for face in self.faces:
       if face.half_edge is None:
         raise ValueError(f"Face {face.id} has no half-edge reference")
       count = 0
       start_he = face.half_edge
       cur = start_he
-      max_iterations = len(self.half_edges) + 1
+      max_iterations = HE + 1
       while count < max_iterations:
         count += 1
         cur = cur.next
@@ -295,8 +506,8 @@ class Triangulation(Syncable):
       else:
         raise ValueError(f"Face {face.id} has infinite loop in edge traversal")
       if face == self._outer_face:
-        if count != order:
-          raise ValueError(f"Outer face should have {order} edges, has {count}")
+        if count < 3:
+          raise ValueError(f"Outer face should have at least 3 edges, has {count}")
       elif count != 3:
         raise ValueError(f"Face {face.id} does not have 3 edges, has {count} edges instead")
     # Check each vertex has at least one outgoing edge
@@ -330,3 +541,54 @@ class Triangulation(Syncable):
         raise ValueError(f"Half-edge from vertex {he.origin.id} has no face")
       if he.next.face != he.face:
         raise ValueError(f"Half-edge from vertex {he.origin.id}: next half-edge has different face")
+    # No duplicate directed edges
+    seen_edges = set()
+    for he in self.half_edges:
+      key = (he.origin.id, he.twin.origin.id)
+      if key in seen_edges:
+        raise ValueError(f"Duplicate directed edge {key}")
+      seen_edges.add(key)
+    # CCW orientation: all inner faces must have positive signed area
+    for face in self.faces:
+      if face == self._outer_face:
+        continue
+      he = face.half_edge
+      a = he.origin
+      b = he.next.origin
+      c = he.next.next.origin
+      cp = self._cross_product(a, b, c)
+      if cp <= 0:
+        raise ValueError(
+          f"Face {face.id} has non-positive orientation (cross product = {cp}). "
+          f"Vertices: {a.id}({a.x:.2f},{a.y:.2f}), {b.id}({b.x:.2f},{b.y:.2f}), {c.id}({c.x:.2f},{c.y:.2f})"
+        )
+    # Boundary edges must not be flippable
+    for he in self.half_edges:
+      if he.face == self._outer_face or he.twin.face == self._outer_face:
+        v1_id = he.origin.id
+        v2_id = he.twin.origin.id
+        if self.is_flippable(v1_id, v2_id):
+          raise ValueError(f"Boundary edge ({v1_id}, {v2_id}) incorrectly reported as flippable")
+    # Flippable edges must form strictly convex quadrilaterals
+    checked_edges = set()
+    for he in self.half_edges:
+      if he.face == self._outer_face or he.twin.face == self._outer_face:
+        continue
+      edge_key = frozenset((he.origin.id, he.twin.origin.id))
+      if edge_key in checked_edges:
+        continue
+      checked_edges.add(edge_key)
+      v1_id = he.origin.id
+      v2_id = he.twin.origin.id
+      if self.is_flippable(v1_id, v2_id):
+        a = he.prev.origin
+        b = he.origin
+        c = he.next.origin
+        d = he.twin.prev.origin
+        # Verify the 4 vertices are distinct
+        ids = {a.id, b.id, c.id, d.id}
+        if len(ids) != 4:
+          raise ValueError(
+            f"Flippable edge ({v1_id}, {v2_id}) has non-distinct quadrilateral vertices: "
+            f"{a.id}, {b.id}, {c.id}, {d.id}"
+          )

@@ -1,9 +1,12 @@
+import sys, os
+
 import pygame
 import copy
 from pygame.math import Vector2
 from SyncNetwork import SyncNetwork
 from frontend.Gobals import Color
-from ParsingService import TriangulationParser
+from io_utils.Parser import Parser
+from io_utils.ConvexPolygonTriangulationParser import ConvexPolygonTriangulationParser
 import data_structures.Triangulation
 from frontend.input_handlers.TriangulationInputHandler import TriangulationInputHandler
 from frontend.input_handlers.InputHandler import InputHandler
@@ -13,15 +16,14 @@ from data_structures.BinaryTree import BinaryTree
 from frontend.renderers.BinaryTreeRenderer import BinaryTreeRenderer
 from frontend.input_handlers.BinaryTreeInputHandler import BinaryTreeInputHandler
 from frontend.Gobals import DEFAULT_FONT
-import sys
 
 
 SOURCE = f"{sys.argv[1]}.json"
 TARGET = f"{sys.argv[2]}.json"
-tri_s = TriangulationParser.parse(SOURCE)
+tri_s = ConvexPolygonTriangulationParser.parse(SOURCE)
 d_tree_s = BinaryTree(tri_s)
 d_tree_s.sanity_check(tri_s)
-tri_t = TriangulationParser.parse(TARGET)
+tri_t = ConvexPolygonTriangulationParser.parse(TARGET)
 d_tree_t = BinaryTree(tri_t, (4,5))
 d_tree_t.sanity_check(tri_t)
 
