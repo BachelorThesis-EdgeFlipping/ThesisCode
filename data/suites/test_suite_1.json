@@ -1,0 +1,4 @@
+{
+  "sources": ["fan6_1", "fan7_1", "fan8_1"],
+  "targets": ["fan6_2", "fan7_2", "fan8_2"]
+}

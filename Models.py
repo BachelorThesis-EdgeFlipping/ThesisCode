@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 from dataclasses_json import dataclass_json
 
 Edge = tuple[int, int]
@@ -9,6 +10,7 @@ Flip = tuple[Edge, Edge]
 #################
 class ImportModel:
   pass
+
 
 @dataclass_json
 @dataclass
@@ -30,3 +32,12 @@ class SequentialSolutionPolygon(ImportModel):
   internal_source_edges: list[Edge]
   internal_target_edges: list[Edge]
   steps: list[Flip]
+
+@dataclass_json
+@dataclass
+class ImportSuite:
+  # list of triangulation names (without .json) to be imported as sources and targets
+  # matched via index: sources[i] <-> targets[i]
+  sources: list[str]
+  targets: list[str]
+  path_prefix: Optional[str] = None
