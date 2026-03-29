@@ -18,8 +18,11 @@ def exhaustive_simultanious_flip_graph_search(
   source: Triangulation,
   target: Triangulation,
   ignore_happy_edges: bool = False,
-  enable_caching: bool = False,
-  timeout: float = 600.0
+  only_flip_maximal_sets: bool = False,
+  only_flip_descreasing_intersection_score: bool = False,
+  never_flip_positive_intersection_score_flips: bool = False,
+  only_one_path_per_state: bool = False,
+  timeout: float = 900.0
 ) -> tuple[list[list[StepData]] | None, bool]: # returns (list of paths, did_timeout)
   if source == target:
     return [[]], False
@@ -41,6 +44,12 @@ def exhaustive_simultanious_flip_graph_search(
         return (results if results else None, True)
     current_node = queue.popleft()
     current_tri, path = current_node.tri, current_node.path
+    old_crossing_score = (
+      current_tri.count_geometric_crossings_with(target)
+      if only_flip_descreasing_intersection_score or never_flip_positive_intersection_score_flips
+      else None
+    )
+    per_edge_negative_cache: dict[Edge, bool] = {}
     # If we already found optimal solutions, skip states deeper than optimal
     if optimal_depth is not None and len(path) >= optimal_depth:
       break
@@ -66,8 +75,29 @@ def exhaustive_simultanious_flip_graph_search(
         edge_face_map[e][0] in used_faces or edge_face_map[e][1] in used_faces
         for e in edge_face_map if e not in flip_set_normalized
       )
+      if only_flip_maximal_sets and not maximal_set:
+        continue #skip flipping non-maximal sets if we are only interested in MIS
       neighbor = current_tri.deep_copy()
-      neighbor.flip_edges_simultaneous(flip_set)
+      if never_flip_positive_intersection_score_flips and old_crossing_score is not None:
+        only_crossing_score_decrease = True
+        previous_crossing_score = old_crossing_score
+        for edge in sorted(flip_set_normalized):
+          can_flip_step = neighbor.flip_edge(edge[0], edge[1])
+          if not can_flip_step:
+            raise Exception(f"Edge {edge} was expected to be flippable but is not. This should not happen.")
+          next_crossing_score = neighbor.count_geometric_crossings_with(target)
+          if next_crossing_score > previous_crossing_score:
+            only_crossing_score_decrease = False
+            break
+          previous_crossing_score = next_crossing_score
+        if not only_crossing_score_decrease:
+          continue # skip sets that do not monotonically decrease the crossing score at each individual flip
+      else:
+        neighbor.flip_edges_simultaneous(flip_set)
+      if only_flip_descreasing_intersection_score:
+        new_score = neighbor.count_geometric_crossings_with(target)
+        if old_crossing_score is not None and new_score >= old_crossing_score:
+          continue #skip flips that do not decrease the intersection score if we are only interested in those
       if neighbor == target:
         result_path = path + [StepData(flip_set, maximal_set)]
         results.append(result_path)
@@ -75,8 +105,8 @@ def exhaustive_simultanious_flip_graph_search(
         continue
       h = hash(neighbor)
       new_depth = len(path) + 1
-      if not enable_caching:
-        # Allow revisiting states at the same depth to find all paths
+      if not only_one_path_per_state:
+        # Allow revisiting states at the same depth to find all paths possible
         if h not in visited or visited[h] >= new_depth:
           visited[h] = new_depth
           queue.append(SearchState(neighbor, path + [StepData(flip_set, maximal_set)]))

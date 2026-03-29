@@ -36,6 +36,7 @@ class Triangulation(Syncable):
     self.half_edges = []
     self.faces = []
     self._outer_face = None
+    self._edge_set_cache: frozenset[Edge] | None = None
 
   def deep_copy(self) -> 'Triangulation':
     copy = Triangulation()
@@ -73,11 +74,67 @@ class Triangulation(Syncable):
 
   #return a set of undirected edges for hashing and equality checks
   def edge_set(self) -> frozenset[tuple[int, int]]:
-    edges = set()
-    for he in self.half_edges:
-      a, b = he.origin.id, he.twin.origin.id
-      edges.add((min(a, b), max(a, b)))
-    return frozenset(edges)
+    if self._edge_set_cache is None:
+      edges = set()
+      for he in self.half_edges:
+        a, b = he.origin.id, he.twin.origin.id
+        edges.add((min(a, b), max(a, b)))
+      self._edge_set_cache = frozenset(edges)
+    return self._edge_set_cache
+
+  def count_shared_edges(self, other: 'Triangulation') -> int:
+    self_edges = self.edge_set()
+    other_edges = other.edge_set()
+    if len(self_edges) > len(other_edges):
+      self_edges, other_edges = other_edges, self_edges
+    return sum(1 for edge in self_edges if edge in other_edges)
+
+  @staticmethod
+  def _orientation(ax: float, ay: float, bx: float, by: float, cx: float, cy: float) -> float:
+    return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
+
+  @staticmethod
+  def _sign_float_safe(value: float) -> int:
+    stupid_ass_float_safety_value = 1e-12
+    if value > stupid_ass_float_safety_value:
+      return 1
+    if value < -stupid_ass_float_safety_value:
+      return -1
+    return 0
+
+  @staticmethod
+  def _segments_strictly_intersect(
+    a1: Vertex,
+    a2: Vertex,
+    b1: Vertex,
+    b2: Vertex
+  ) -> bool:
+    #shared endpoints = no geometric crossings
+    if (
+      a1.id == b1.id or a1.id == b2.id or
+      a2.id == b1.id or a2.id == b2.id
+    ):
+      return False
+    o1 = Triangulation._sign_float_safe(Triangulation._orientation(a1.x, a1.y, a2.x, a2.y, b1.x, b1.y))
+    o2 = Triangulation._sign_float_safe(Triangulation._orientation(a1.x, a1.y, a2.x, a2.y, b2.x, b2.y))
+    o3 = Triangulation._sign_float_safe(Triangulation._orientation(b1.x, b1.y, b2.x, b2.y, a1.x, a1.y))
+    o4 = Triangulation._sign_float_safe(Triangulation._orientation(b1.x, b1.y, b2.x, b2.y, a2.x, a2.y))
+    #strict intersection: excludes collinear/touching case
+    return o1 * o2 < 0 and o3 * o4 < 0
+
+  def count_geometric_crossings_with(self, other: 'Triangulation') -> int:
+    crossings = 0
+    self_edges = self.edge_set()
+    other_edges = other.edge_set()
+    for a_id, b_id in self_edges:
+      a1 = self.vertices[a_id]
+      a2 = self.vertices[b_id]
+      for c_id, d_id in other_edges:
+        b1 = other.vertices[c_id]
+        b2 = other.vertices[d_id]
+        if Triangulation._segments_strictly_intersect(a1, a2, b1, b2):
+          crossings += 1
+    return crossings
 
   def __hash__(self) -> int:
     return hash(self.edge_set())
@@ -91,8 +148,10 @@ class Triangulation(Syncable):
   def insert_edge(self, v1_id: int, v2_id: int):
     he_start, he_end = self._find_he_in_common_face(v1_id, v2_id)
     self._split_face(he_start, he_end)
+    self._edge_set_cache = None
 
   def initialize_regular_polygon(self, points:list[tuple[float,float]]):
+    self._edge_set_cache = None
     n = len(points)
     if n < 3:
       raise ValueError("At least 3 points are required to form a polygon convex hull")
@@ -124,6 +183,7 @@ class Triangulation(Syncable):
       outer_edges[i].prev = outer_edges[(i + 1) % n]
 
   def initialize_from_edges(self, points: list[tuple[int, int]], edges: list[tuple[int, int]]):
+    self._edge_set_cache = None
     #create vertices
     for i, (x, y) in enumerate(points):
       self._create_vertex(x, y)
@@ -351,6 +411,7 @@ class Triangulation(Syncable):
     # Update face half_edge references
     face1.half_edge = twin
     face2.half_edge = he
+    self._edge_set_cache = None
     return True
   
   def _find_flip_candidate_by_face_ids(self, face1_id: int, face2_id: int) -> tuple[int,int]:

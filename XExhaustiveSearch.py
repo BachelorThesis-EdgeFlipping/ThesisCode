@@ -56,9 +56,9 @@ def has_optimal_all_maximal_path(paths: list[list[StepData]] | None) -> bool:
 # output helpers #
 ##################
 def error_incorrect_arguments():
-  print("Usage: python XExhaustiveSearch.py <parser_type> <run_suite> <source> <target>")
-  print("  run_suite: -suite = run all problem pairs from suite, -no_suite = run problem single pair")
+  print("Usage: python XExhaustiveSearch.py <parser_type> <run_suite> <source/suite> <target>")
   print("  parser_type: -ps = PointSetTriangulationParser, -cp = ConvexPolygonTriangulationParser")
+  print("  run_suite: -suite = run all problem pairs from suite, -no_suite = run problem single pair")
   sys.exit(1)
 
 
@@ -202,7 +202,7 @@ if is_suite:
 
   print("###### Twin Pair Overview ######")
   print()
-  twin_map: dict[tuple[str, str], dict[str, bool]] = {}
+  twin_map: dict[tuple[str, str], dict[str, tuple[bool, bool]]] = {}
   for index, result in enumerate(shortest_sequence_ignore_happy):
     source_name = source_names[index]
     target_name = target_names[index]
@@ -212,15 +212,18 @@ if is_suite:
     direction = f"{source_name}->{target_name}"
     if key not in twin_map:
       twin_map[key] = {}
-    twin_map[key][direction] = problem_has_all_maximal_path[index]
+    # (has_all_maximal_path, timed_out)
+    twin_map[key][direction] = (problem_has_all_maximal_path[index], timed_out_pairs[index])
   sorted_twin_items = sorted(twin_map.items())
   for (name_a, name_b), directional_results in sorted_twin_items:
     forward_key = f"{name_a}->{name_b}"
     backward_key = f"{name_b}->{name_a}"
     if forward_key not in directional_results or backward_key not in directional_results:
       continue
-    forward_has = directional_results[forward_key]
-    backward_has = directional_results[backward_key]
+    forward_has, forward_timed_out = directional_results[forward_key]
+    backward_has, backward_timed_out = directional_results[backward_key]
+    if forward_timed_out or backward_timed_out:
+      continue
     if forward_has and backward_has:
       twin_status = "BOTH"
     elif forward_has or backward_has:
@@ -232,11 +235,13 @@ if is_suite:
     print(f"Twin problem pair ({name_a} <-> {name_b}): {twin_status}")
   one_pairs = [(name_a, name_b) for (name_a, name_b), directional_results in sorted_twin_items
     if f"{name_a}->{name_b}" in directional_results and f"{name_b}->{name_a}" in directional_results
-    and (directional_results[f"{name_a}->{name_b}"] != directional_results[f"{name_b}->{name_a}"])]
+    and (not directional_results[f"{name_a}->{name_b}"][1])
+    and (not directional_results[f"{name_b}->{name_a}"][1])
+    and (directional_results[f"{name_a}->{name_b}"][0] != directional_results[f"{name_b}->{name_a}"][0])]
   if one_pairs:
     print(f"Twin pairs where only ONE direction has an all-maximal optimal path ({len(one_pairs)}):")
     for name_a, name_b in one_pairs:
-      forward_has = twin_map[(name_a, name_b)][f"{name_a}->{name_b}"]
+      forward_has = twin_map[(name_a, name_b)][f"{name_a}->{name_b}"][0]
       direction = f"{name_a}->{name_b}" if forward_has else f"{name_b}->{name_a}"
       print(f"  ({name_a} <-> {name_b}): {direction} has all-maximal optimal path")
     print()
