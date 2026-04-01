@@ -111,16 +111,16 @@ def _build_render_layers(G: nx.Graph, render_edges: list[RenderEdge]):
 def _draw_and_export(G: nx.Graph, pos: dict, render_edges: list[RenderEdge], filename: str):
   #Draw the graph and export as SVG
   hl_edges, hl_colors, hl_widths, m_edges, m_colors, m_widths, m_styles = _build_render_layers(G, render_edges)
-  plt.figure(figsize=FIGSIZE, facecolor=BACKGROUND_COLOR.value)
+  plt.figure(figsize=FIGSIZE, facecolor=BACKGROUND_COLOR.value_normalized())
   if hl_edges:
     nx.draw(G.edge_subgraph(hl_edges), pos,
-        edge_color=[c.value for c in hl_colors],
+        edge_color=[c.value_normalized() for c in hl_colors],
         width=hl_widths,
         alpha=EDGE_HIGHLIGHT_ALPHA,
         node_size=0,
         with_labels=False)
   nx.draw(G.edge_subgraph(m_edges), pos,
-      edge_color=[c.value for c in m_colors] ,
+      edge_color=[c.value_normalized() for c in m_colors] ,
       width=m_widths,
       style=m_styles,
       node_size=0,
@@ -129,7 +129,7 @@ def _draw_and_export(G: nx.Graph, pos: dict, render_edges: list[RenderEdge], fil
   ax = plt.gca()
   xs = [pos[n][0] for n in G.nodes()]
   ys = [pos[n][1] for n in G.nodes()]
-  ax.scatter(xs, ys, s=VERTEX_RADIUS, facecolors=VERTEX_FILL_COLOR.value, edgecolors=VERTEX_COLOR.value, linewidths=VERTEX_WIDTH, zorder=3)
+  ax.scatter(xs, ys, s=VERTEX_RADIUS, facecolors=VERTEX_FILL_COLOR.value_normalized(), edgecolors=VERTEX_COLOR.value_normalized(), linewidths=VERTEX_WIDTH, zorder=3)
   plt.axis('off')
   ax.set_aspect('equal', adjustable='datalim')
   export_path = f"{DEFAULT_EXPORT_PATH}/{filename}.svg"

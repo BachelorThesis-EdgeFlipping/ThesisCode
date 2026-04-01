@@ -1,6 +1,7 @@
 from collections import deque
 from dataclasses import dataclass, field
 import time
+import gc
 from Models import Edge
 from data_structures.Triangulation import Triangulation
 
@@ -24,6 +25,11 @@ def exhaustive_simultanious_flip_graph_search(
   only_one_path_per_state: bool = False,
   timeout: float = 900.0
 ) -> tuple[list[list[StepData]] | None, bool]: # returns (list of paths, did_timeout)
+  source_vertices = tuple(sorted((v.x, v.y) for v in source.vertices))
+  target_vertices = tuple(sorted((v.x, v.y) for v in target.vertices))
+  if source_vertices != target_vertices:
+    raise ValueError("Source and target triangulations are not compatible (they do not share the same set of vertices).")
+
   if source == target:
     return [[]], False
   start_time = time.time()
@@ -41,6 +47,11 @@ def exhaustive_simultanious_flip_graph_search(
     iterations += 1
     if iterations % check_timeout_interval == 0:
       if time.time() - start_time > timeout:
+        for node in queue:
+          if node.tri is not source and node.tri is not target:
+            node.tri.destroy()
+        queue.clear()
+        gc.collect()
         return (results if results else None, True)
     current_node = queue.popleft()
     current_tri, path = current_node.tri, current_node.path
@@ -52,7 +63,9 @@ def exhaustive_simultanious_flip_graph_search(
     per_edge_negative_cache: dict[Edge, bool] = {}
     # If we already found optimal solutions, skip states deeper than optimal
     if optimal_depth is not None and len(path) >= optimal_depth:
-      break
+      if current_tri is not source and current_tri is not target:
+        current_tri.destroy()
+      continue
     flip_sets = current_tri.get_independent_flip_sets(target_edges_set if ignore_happy_edges else None)
     # precompute flippable edges and their face pairs for maximal check
     flippable = current_tri.get_flippable_edges()
@@ -84,6 +97,7 @@ def exhaustive_simultanious_flip_graph_search(
         for edge in sorted(flip_set_normalized):
           can_flip_step = neighbor.flip_edge(edge[0], edge[1])
           if not can_flip_step:
+            neighbor.destroy()
             raise Exception(f"Edge {edge} was expected to be flippable but is not. This should not happen.")
           next_crossing_score = neighbor.count_geometric_crossings_with(target)
           if next_crossing_score > previous_crossing_score:
@@ -91,17 +105,20 @@ def exhaustive_simultanious_flip_graph_search(
             break
           previous_crossing_score = next_crossing_score
         if not only_crossing_score_decrease:
+          neighbor.destroy()
           continue # skip sets that do not monotonically decrease the crossing score at each individual flip
       else:
         neighbor.flip_edges_simultaneous(flip_set)
       if only_flip_descreasing_intersection_score:
         new_score = neighbor.count_geometric_crossings_with(target)
         if old_crossing_score is not None and new_score >= old_crossing_score:
+          neighbor.destroy()
           continue #skip flips that do not decrease the intersection score if we are only interested in those
       if neighbor == target:
         result_path = path + [StepData(flip_set, maximal_set)]
         results.append(result_path)
         optimal_depth = len(result_path)
+        neighbor.destroy()
         continue
       h = hash(neighbor)
       new_depth = len(path) + 1
@@ -110,8 +127,15 @@ def exhaustive_simultanious_flip_graph_search(
         if h not in visited or visited[h] >= new_depth:
           visited[h] = new_depth
           queue.append(SearchState(neighbor, path + [StepData(flip_set, maximal_set)]))
+        else:
+          neighbor.destroy()
       else:
         if h not in visited:
           visited[h] = new_depth
           queue.append(SearchState(neighbor, path + [StepData(flip_set, maximal_set)]))
+        else:
+          neighbor.destroy()
+    if current_tri is not source and current_tri is not target:
+      current_tri.destroy()
+  gc.collect()
   return (results if results else None, False)

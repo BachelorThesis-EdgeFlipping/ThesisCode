@@ -1,3 +1,5 @@
+from datetime import datetime
+import os
 import sys
 import time
 from data_structures.Triangulation import Triangulation
@@ -21,6 +23,16 @@ def number_possible_triangulations(order: int) -> int:
 def number_possible_ordered_pairs(order: int) -> int:
   possible_triangulations = number_possible_triangulations(order)
   return possible_triangulations * (possible_triangulations - 1)
+
+def get_vertex_set_key(triangulation: Triangulation) -> tuple[tuple[float, float], ...]:
+  return tuple(sorted((vertex.x, vertex.y) for vertex in triangulation.vertices))
+
+def number_possible_ordered_pairs_by_vertex_set(triangulations: list[Triangulation]) -> int:
+  grouped_counts: dict[tuple[tuple[float, float], ...], int] = {}
+  for triangulation in triangulations:
+    key = get_vertex_set_key(triangulation)
+    grouped_counts[key] = grouped_counts.get(key, 0) + 1
+  return sum(count * (count - 1) for count in grouped_counts.values())
 
 def all_triangulations_have_same_order(triangulations: list[Triangulation]) -> tuple[bool, int | None]:
   if not triangulations:
@@ -74,6 +86,19 @@ def print_edge_set_groups(paths: list[list[StepData]]):
     print(f"    - Paths {path_indices}")
     print(f"    - edges flipped {sorted(edge_set)}")
 
+def print_and_log_progress(progress_message: str):
+  #if printing not (only) to console, ensure progress messages are flushed immediately
+  if not sys.stdout.isatty():
+    print(progress_message, flush=True)
+  #if only printing to console, overwrite the same line for singe line progress updates
+  else:
+    print(f"\r{progress_message:<80}", end="", flush=True)
+  if log_progress:
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_file.write(f"[{now}] {progress_message}\n")
+    #immediate flush to ensure log is up to date even if program is interrupted (useful for freezes)
+    log_file.flush()
+    os.fsync(log_file.fileno())
 
 
 ############
@@ -88,6 +113,8 @@ source_names: list[str] = []
 target_names: list[str] = []
 is_suite: bool = False
 convex_polygon_realm = False
+log_file = open("test_results/logs/progress.log", "a")
+log_progress = False
 
 #program arguments
 timer_start_parsing = time.time()
@@ -103,13 +130,20 @@ elif sys.argv[1] == "-ps":
 else:
   error_incorrect_arguments()
 if sys.argv[2] == "-no_suite":
-  if len(sys.argv) != 5:
+  if(len(sys.argv) > 5):
     error_incorrect_arguments()
   source_names = [sys.argv[3]]
   target_names = [sys.argv[4]]
   sources = [parser.parse(f"{data_folder}{sys.argv[3]}.json")]
   targets = [parser.parse(f"{data_folder}{sys.argv[4]}.json")]
+
 if sys.argv[2] == "-suite":
+  if(len(sys.argv) > 5):
+    error_incorrect_arguments()
+  if(len(sys.argv) == 5):
+    if sys.argv[4] != "-log":
+      error_incorrect_arguments()  
+    log_progress = True
   is_suite = True
   suite_file = f"suites/{sys.argv[3]}.json"
   suite = ImportSuite.from_json(Parser.getJSONString(suite_file))
@@ -131,16 +165,25 @@ timer_start_search_overall = time.time()
 total_problem_pairs = len(sources)
 shortest_sequence_ignore_happy: list[tuple[list[list[StepData]] | None, bool]] = []
 timed_out_pairs: list[bool] = []
-print(f"\rProgress: calculated problem pairs 0/{total_problem_pairs}", end="", flush=True)
 for pair_index, (source, target) in enumerate(zip(sources, targets), start=1):
   source_label = source_names[pair_index - 1] if pair_index - 1 < len(source_names) else str(pair_index)
   target_label = target_names[pair_index - 1] if pair_index - 1 < len(target_names) else str(pair_index)
-  result, timed_out = exhaustive_simultanious_flip_graph_search(source, target, ignore_happy_edges=True, timeout=600)
+  
+  try:
+    result, timed_out = exhaustive_simultanious_flip_graph_search(source, target, ignore_happy_edges=True, timeout=600)
+  except ValueError as e:
+    print_and_log_progress(f"Skipping pair {pair_index}/{total_problem_pairs} ({source_label} -> {target_label}) - Incompatible point sets: {e}")
+    shortest_sequence_ignore_happy.append((None, False))
+    timed_out_pairs.append(False)
+    continue
+
   shortest_sequence_ignore_happy.append((result, timed_out))
   timed_out_pairs.append(timed_out)
-  print(f"\rProgress: calculated problem pairs {pair_index}/{total_problem_pairs} ({source_label} -> {target_label})", end="", flush=True)
+  timeout_suffix = " | TIMED OUT" if timed_out else ""
+  print_and_log_progress(f"Progress: calculated problem pairs {pair_index}/{total_problem_pairs} ({source_label} -> {target_label}){timeout_suffix}")
 print()
 timer_end_search_overall = time.time()
+log_file.close()
 
 #####################
 #  results output   #
@@ -197,7 +240,7 @@ if is_suite:
       print(f"  Problem {index+1}: {source_names[index]} -> {target_names[index]} | no path found")
   print()
   total = len(shortest_sequence_ignore_happy)
-  pct_solved = convert_to_pct(count_with_maximal_path, count_solved)
+  pct_solved_optimal_maximal = convert_to_pct(count_with_maximal_path, count_solved)
   print()
 
   print("###### Twin Pair Overview ######")
@@ -252,9 +295,41 @@ if is_suite:
   twin_both_pct = convert_to_pct(twin_status_counts["BOTH"], twin_pairs_total)
   twin_none_pct = convert_to_pct(twin_status_counts["NONE"], twin_pairs_total)
 
-  unique_triangulations = len(set(source_names + target_names))
-  possible_directed_pairs = unique_triangulations * (unique_triangulations - 1)
-  tested_directed_pairs_count = len([1 for s, t in tested_directed_pairs if s != t])
+  triangulation_by_name: dict[str, Triangulation] = {}
+  for name, triangulation in zip(source_names, sources):
+    triangulation_by_name.setdefault(name, triangulation)
+  for name, triangulation in zip(target_names, targets):
+    triangulation_by_name.setdefault(name, triangulation)
+
+  unique_names = set(source_names + target_names)
+  unique_triangulations = len(unique_names)
+  point_set_distinct_vertex_sets = 0
+  point_set_group_sizes: list[int] = []
+  if convex_polygon_realm:
+    possible_directed_pairs = unique_triangulations * (unique_triangulations - 1)
+    tested_directed_pairs_count = len([1 for s, t in tested_directed_pairs if s != t])
+  else:
+    grouped_names_by_vertex_set: dict[tuple[tuple[float, float], ...], list[str]] = {}
+    for name in sorted(unique_names):
+      if name not in triangulation_by_name:
+        continue
+      key = get_vertex_set_key(triangulation_by_name[name])
+      grouped_names_by_vertex_set.setdefault(key, []).append(name)
+    point_set_distinct_vertex_sets = len(grouped_names_by_vertex_set)
+    point_set_group_sizes = sorted((len(names) for names in grouped_names_by_vertex_set.values()), reverse=True)
+
+    vertex_set_key_by_name = {
+      name: get_vertex_set_key(triangulation_by_name[name])
+      for name in unique_names
+      if name in triangulation_by_name
+    }
+    distinct_triangulations = [triangulation_by_name[name] for name in unique_names if name in triangulation_by_name]
+    possible_directed_pairs = number_possible_ordered_pairs_by_vertex_set(distinct_triangulations)
+    tested_directed_pairs_count = len([
+      1 for s, t in tested_directed_pairs
+      if s != t and s in vertex_set_key_by_name and t in vertex_set_key_by_name
+      and vertex_set_key_by_name[s] == vertex_set_key_by_name[t]
+    ])
   tested_directed_pct = convert_to_pct(tested_directed_pairs_count, possible_directed_pairs)
   has_consistent_order = False
   consistent_order = None
@@ -264,17 +339,20 @@ if is_suite:
     possible_overall_triangulations = number_possible_triangulations(consistent_order)
     tested_overall_triangulations_pct = convert_to_pct(unique_triangulations, possible_overall_triangulations)
     possible_overall_directed_pairs = number_possible_ordered_pairs(consistent_order)
-    tested_overall_directed_pct = convert_to_pct(tested_directed_pairs_count, possible_overall_directed_pairs)
+    tested_overall_directed_pairs_pct = convert_to_pct(tested_directed_pairs_count, possible_overall_directed_pairs)
 
   print()
   print("###### Statistics ######")
   print(f"Problems solved: {count_solved}/{total}")
   print(f"Problems timed out: {count_timed_out}/{total}")
-  print(f"Solved problems with at least one all-maximal path: {count_with_maximal_path}/{count_solved} solved ({pct_solved:.1f}%)")
+  print(f"Solved problems with at least one all-maximal path: {count_with_maximal_path}/{count_solved} solved ({pct_solved_optimal_maximal:.1f}%)")
   print(f"Tested ordered pairs over the possible pairs for given triangulations: {tested_directed_pairs_count}/{possible_directed_pairs} ({tested_directed_pct:.1f}%)")
+  if not convex_polygon_realm:
+    print(f"Distinct underlying vertex sets among involved triangulations: {point_set_distinct_vertex_sets}")
+    print(f"Triangulations per distinct vertex set: {point_set_group_sizes}")
   if has_consistent_order and consistent_order is not None:
     print(f"Involved distinct triangulations over all possible triangulations for order n={consistent_order}: {unique_triangulations}/{possible_overall_triangulations} ({tested_overall_triangulations_pct:.1f}%)")
-    print(f"Tested ordered pairs over all possible pairs for order n={consistent_order}: {tested_directed_pairs_count}/{possible_overall_directed_pairs} ({tested_overall_directed_pct:.1f}%)")
+    print(f"Tested ordered pairs over all possible pairs for order n={consistent_order}: {tested_directed_pairs_count}/{possible_overall_directed_pairs} ({tested_overall_directed_pairs_pct:.1f}%)")
   print(f"Number of (solved) problems with a twin problem: {twin_pairs_total*2}/{count_solved} ({solved_twin_pairs_pct*2:.1f}%)")
   print(f"Twin pair distribution (all-maximal path): ONE {twin_one_pct:.1f}% | BOTH {twin_both_pct:.1f}% | NONE {twin_none_pct:.1f}%")
   print()

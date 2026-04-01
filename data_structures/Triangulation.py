@@ -38,6 +38,22 @@ class Triangulation(Syncable):
     self._outer_face = None
     self._edge_set_cache: frozenset[Edge] | None = None
 
+  def destroy(self):
+    for he in self.half_edges:
+      he.origin = None
+      he.twin = None
+      he.next = None
+      he.prev = None
+      he.face = None
+    for f in self.faces:
+      f.half_edge = None
+    for v in self.vertices:
+      v.half_edge = None
+    self.half_edges.clear()
+    self.faces.clear()
+    self.vertices.clear()
+    self._outer_face = None
+
   def deep_copy(self) -> 'Triangulation':
     copy = Triangulation()
     for v in self.vertices:
