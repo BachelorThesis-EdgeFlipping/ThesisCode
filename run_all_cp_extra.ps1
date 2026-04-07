@@ -1,0 +1,3 @@
+python .\XExhaustiveSearch.py -cp -suite generated/cp_8_ALL_589830891_suite_n17292_twins -log | tee test_results/from_generated/cp_complete8_result.txt;
+python .\XExhaustiveSearch.py -cp -suite generated/cp_14_10-45_455018549_suite_n214_twins -log | tee test_results/from_generated/cp_rand14_result.txt;
+python .\XExhaustiveSearch.py -cp -suite generated/cp_15_10-50_825497199_suite_n160_twins -log | tee test_results/from_generated/cp_rand15_result.txt;

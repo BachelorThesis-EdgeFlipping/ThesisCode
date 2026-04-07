@@ -1,7 +1,10 @@
-python .\XExhaustiveSearch.py -ps -suite serious_tests/rand6_suite -log | tee test_results/serious_tests/ps_rand6_result.txt;
-python .\XExhaustiveSearch.py -ps -suite serious_tests/rand7_suite | tee test_results/serious_tests/ps_rand7_result.txt;
-python .\XExhaustiveSearch.py -ps -suite serious_tests/rand8_suite | tee test_results/serious_tests/ps_rand8_result.txt;
-python .\XExhaustiveSearch.py -ps -suite serious_tests/rand9_suite | tee test_results/serious_tests/ps_rand9_result.txt;
-python .\XExhaustiveSearch.py -ps -suite serious_tests/rand10_suite | tee test_results/serious_tests/ps_rand10_result.txt;
-python .\XExhaustiveSearch.py -ps -suite serious_tests/rand12_suite | tee test_results/serious_tests/ps_rand12_result.txt;
-python .\XExhaustiveSearch.py -ps -suite serious_tests/rand15_suite -log | tee test_results/serious_tests/ps_rand15_result.txt;
+python .\XExhaustiveSearch.py -ps -suite generated/6_25_ALL_849624902_suite_n1878_twins -log | tee test_results/from_generated/ps_rand6_result.txt;
+python .\XExhaustiveSearch.py -ps -suite generated/7_20_5-12_987304659_suite_n4100_twins -log | tee test_results/from_generated/ps_rand7_result.txt;
+python .\XExhaustiveSearch.py -ps -suite generated/8_15_5-15_370535253_suite_n1350_twins -log | tee test_results/from_generated/ps_rand8_result.txt;
+python .\XExhaustiveSearch.py -ps -suite generated/9_12_6-20_425298682_suite_n672_twins -log | tee test_results/from_generated/ps_rand9_result.txt;
+python .\XExhaustiveSearch.py -ps -suite generated/10_8_8-25_249865554_suite_n632_twins -log | tee test_results/from_generated/ps_rand10_result.txt;
+python .\XExhaustiveSearch.py -ps -suite generated/11_9_10-25_609769241_suite_n648_twins -log | tee test_results/from_generated/ps_rand11_result.txt;
+python .\XExhaustiveSearch.py -ps -suite generated/12_6_10-35_697391824_suite_n180_twins -log | tee test_results/from_generated/ps_rand12_result.txt;
+python .\XExhaustiveSearch.py -ps -suite generated/13_6_10-40_113806977_suite_n180_twins -log | tee test_results/from_generated/ps_rand13_result.txt;
+python .\XExhaustiveSearch.py -ps -suite generated/14_6_10-45_949804505_suite_n180_twins -log | tee test_results/from_generated/ps_rand14_result.txt;
+python .\XExhaustiveSearch.py -ps -suite generated/15_5_15-50_798070875_suite_n84_twins -log | tee test_results/from_generated/ps_rand15_result.txt;

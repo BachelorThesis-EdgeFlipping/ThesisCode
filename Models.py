@@ -24,6 +24,7 @@ class RegularPolygonTriangulation(ImportModel):
 class PointSetTriangulation(ImportModel):
   vertices: list[tuple[int, int]]
   edges: list[Edge] #list of edges as tuples of vertex indices
+  seed: Optional[int] = None
 
 @dataclass_json
 @dataclass

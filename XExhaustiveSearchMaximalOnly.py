@@ -84,9 +84,9 @@ if sys.argv[2] not in ("-suite", "-no_suite"):
 timer_end_parsing = time.time()
 
 
-##############################################
-# run exhaustive maximal-only search algorithm #
-##############################################
+#################################################
+# run exhaustive  maximal-only search algorithm #
+#################################################
 
 timer_start_search_overall = time.time()
 total_problem_pairs = len(sources)

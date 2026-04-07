@@ -15,5 +15,5 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Test results
-test_results/
+# log files
+*.log

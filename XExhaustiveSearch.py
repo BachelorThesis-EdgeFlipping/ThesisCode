@@ -68,7 +68,7 @@ def has_optimal_all_maximal_path(paths: list[list[StepData]] | None) -> bool:
 # output helpers #
 ##################
 def error_incorrect_arguments():
-  print("Usage: python XExhaustiveSearch.py <parser_type> <run_suite> <source/suite> <target>")
+  print("Usage: python XExhaustiveSearch.py <parser_type> <run_suite> <source/suite> <target> <optional: -log")
   print("  parser_type: -ps = PointSetTriangulationParser, -cp = ConvexPolygonTriangulationParser")
   print("  run_suite: -suite = run all problem pairs from suite, -no_suite = run problem single pair")
   sys.exit(1)
@@ -170,9 +170,9 @@ for pair_index, (source, target) in enumerate(zip(sources, targets), start=1):
   target_label = target_names[pair_index - 1] if pair_index - 1 < len(target_names) else str(pair_index)
   
   try:
-    result, timed_out = exhaustive_simultanious_flip_graph_search(source, target, ignore_happy_edges=True, timeout=600)
+    result, timed_out = exhaustive_simultanious_flip_graph_search(source, target, ignore_happy_edges=True, only_one_path_per_state=True, timeout=600)
   except ValueError as e:
-    print_and_log_progress(f"Skipping pair {pair_index}/{total_problem_pairs} ({source_label} -> {target_label}) - Incompatible point sets: {e}")
+    print_and_log_progress(f"Skipping pair {pair_index}/{total_problem_pairs} ({source_label} -> {target_label}). Reason: Incompatible point sets.")
     shortest_sequence_ignore_happy.append((None, False))
     timed_out_pairs.append(False)
     continue

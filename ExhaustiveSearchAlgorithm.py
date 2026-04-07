@@ -23,7 +23,7 @@ def exhaustive_simultanious_flip_graph_search(
   only_flip_descreasing_intersection_score: bool = False,
   never_flip_positive_intersection_score_flips: bool = False,
   only_one_path_per_state: bool = False,
-  timeout: float = 900.0
+  timeout: float = 600.0
 ) -> tuple[list[list[StepData]] | None, bool]: # returns (list of paths, did_timeout)
   source_vertices = tuple(sorted((v.x, v.y) for v in source.vertices))
   target_vertices = tuple(sorted((v.x, v.y) for v in target.vertices))
@@ -35,8 +35,8 @@ def exhaustive_simultanious_flip_graph_search(
   start_time = time.time()
   target_edges_set = target.edge_set()
   #BFS: each entry is a SearchState
-  #visited: maps triangulation hashes to the depth at which they were first seen
-  visited: dict[int, int] = {hash(source): 0}
+  #visited: maps triangulation hashes to a tuple of (depth, represents_an_all_maximal_path)
+  visited: dict[int, tuple[int, bool]] = {hash(source): (0, True)}
   queue: deque[SearchState] = deque()
   queue.append(SearchState(source, []))
   results: list[list[StepData]] = []
@@ -55,6 +55,13 @@ def exhaustive_simultanious_flip_graph_search(
         return (results if results else None, True)
     current_node = queue.popleft()
     current_tri, path = current_node.tri, current_node.path
+    if only_one_path_per_state and path:
+      is_path_all_maximal = all(step.maximal_set for step in path)
+      if not is_path_all_maximal and visited[hash(current_tri)][1]:
+        if current_tri is not source and current_tri is not target:
+          current_tri.destroy()
+        continue
+    
     old_crossing_score = (
       current_tri.count_geometric_crossings_with(target)
       if only_flip_descreasing_intersection_score or never_flip_positive_intersection_score_flips
@@ -122,16 +129,21 @@ def exhaustive_simultanious_flip_graph_search(
         continue
       h = hash(neighbor)
       new_depth = len(path) + 1
+      is_all_maximal = maximal_set and all(step.maximal_set for step in path)
       if not only_one_path_per_state:
         # Allow revisiting states at the same depth to find all paths possible
-        if h not in visited or visited[h] >= new_depth:
-          visited[h] = new_depth
+        if h not in visited or visited[h][0] >= new_depth:
+          visited[h] = (new_depth, visited[h][1] or is_all_maximal if h in visited else is_all_maximal)
           queue.append(SearchState(neighbor, path + [StepData(flip_set, maximal_set)]))
         else:
           neighbor.destroy()
       else:
         if h not in visited:
-          visited[h] = new_depth
+          visited[h] = (new_depth, is_all_maximal)
+          queue.append(SearchState(neighbor, path + [StepData(flip_set, maximal_set)]))
+        elif visited[h][0] == new_depth and not visited[h][1] and is_all_maximal:
+          # We previously arrived at this state with a non all-maximal path, but now we have an all-maximal one.
+          visited[h] = (new_depth, True)
           queue.append(SearchState(neighbor, path + [StepData(flip_set, maximal_set)]))
         else:
           neighbor.destroy()

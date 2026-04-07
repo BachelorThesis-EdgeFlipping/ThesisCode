@@ -1,0 +1,12 @@
+python .\XExhaustiveSearch.py -cp -suite generated/cp_4_ALL_514922352_suite_n2_twins -log | tee test_results/from_generated/cp_complete4_result.txt;
+python .\XExhaustiveSearch.py -cp -suite generated/cp_5_ALL_487183760_suite_n20_twins -log | tee test_results/from_generated/cp_complete5_result.txt;
+python .\XExhaustiveSearch.py -cp -suite generated/cp_6_ALL_459010394_suite_n182_twins -log | tee test_results/from_generated/cp_complete6_result.txt;
+python .\XExhaustiveSearch.py -cp -suite generated/cp_7_ALL_520652526_suite_n1722_twins -log | tee test_results/from_generated/cp_complete7_result.txt;
+python .\XExhaustiveSearch.py -cp -suite generated/cp_8_ALL_589830891_suite_n17292_twins -log | tee test_results/from_generated/cp_complete8_result.txt;
+python .\XExhaustiveSearch.py -cp -suite generated/cp_9_6-20_609531686_suite_n10530_twins -log | tee test_results/from_generated/cp_rand9_result.txt;
+python .\XExhaustiveSearch.py -cp -suite generated/cp_10_8-25_922919284_suite_n2450_twins -log | tee test_results/from_generated/cp_rand10_result.txt;
+python .\XExhaustiveSearch.py -cp -suite generated/cp_11_10-27_809184803_suite_n1892_twins -log | tee test_results/from_generated/cp_rand11_result.txt;
+python .\XExhaustiveSearch.py -cp -suite generated/cp_12_10-35_535119973_suite_n380_twins -log | tee test_results/from_generated/cp_rand12_result.txt;
+python .\XExhaustiveSearch.py -cp -suite generated/cp_13_10-40_351180391_suite_n380_twins -log | tee test_results/from_generated/cp_rand13_result.txt;
+python .\XExhaustiveSearch.py -cp -suite generated/cp_14_10-45_455018549_suite_n214_twins -log | tee test_results/from_generated/cp_rand14_result.txt;
+python .\XExhaustiveSearch.py -cp -suite generated/cp_15_10-50_825497199_suite_n160_twins -log | tee test_results/from_generated/cp_rand15_result.txt;

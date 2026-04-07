@@ -1,0 +1,11 @@
+{
+  "path_prefix": "generated/cp_4_ALL_514922352/",
+  "sources": [
+    "cp4_1",
+    "cp4_2"
+  ],
+  "targets": [
+    "cp4_2",
+    "cp4_1"
+  ]
+}
