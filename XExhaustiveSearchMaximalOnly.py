@@ -102,7 +102,7 @@ for pair_index, (source, target) in enumerate(zip(sources, targets), start=1):
 		ignore_happy_edges=True,
 		only_flip_maximal_sets=True,
 		only_flip_descreasing_intersection_score=True,
-		never_flip_positive_intersection_score_flips=True,
+		never_flip_positive_intersection_score_for_individual_flips=True,
 		only_one_path_per_state=True,
 	)
 	search_results.append((result, timed_out))

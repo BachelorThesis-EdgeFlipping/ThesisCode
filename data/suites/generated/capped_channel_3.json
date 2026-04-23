@@ -1,0 +1,11 @@
+{
+    "path_prefix": "generated/run_m3/",
+    "sources": [
+        "2_cc_l",
+        "3_cc_l"
+    ],
+    "targets": [
+        "2_cc_r",
+        "3_cc_r"
+    ]
+}

@@ -9,6 +9,7 @@ from data_structures.Triangulation import Triangulation
 class StepData:
   flip_set: list[Edge]
   maximal_set: bool
+  intersection_diff: int | None = None
 
 @dataclass
 class SearchState:
@@ -21,7 +22,7 @@ def exhaustive_simultanious_flip_graph_search(
   ignore_happy_edges: bool = False,
   only_flip_maximal_sets: bool = False,
   only_flip_descreasing_intersection_score: bool = False,
-  never_flip_positive_intersection_score_flips: bool = False,
+  never_flip_positive_intersection_score_for_individual_flips: bool = False,
   only_one_path_per_state: bool = False,
   timeout: float = 600.0
 ) -> tuple[list[list[StepData]] | None, bool]: # returns (list of paths, did_timeout)
@@ -64,7 +65,7 @@ def exhaustive_simultanious_flip_graph_search(
     
     old_crossing_score = (
       current_tri.count_geometric_crossings_with(target)
-      if only_flip_descreasing_intersection_score or never_flip_positive_intersection_score_flips
+      if only_flip_descreasing_intersection_score or never_flip_positive_intersection_score_for_individual_flips
       else None
     )
     per_edge_negative_cache: dict[Edge, bool] = {}
@@ -98,9 +99,10 @@ def exhaustive_simultanious_flip_graph_search(
       if only_flip_maximal_sets and not maximal_set:
         continue #skip flipping non-maximal sets if we are only interested in MIS
       neighbor = current_tri.deep_copy()
-      if never_flip_positive_intersection_score_flips and old_crossing_score is not None:
+      if never_flip_positive_intersection_score_for_individual_flips and old_crossing_score is not None:
         only_crossing_score_decrease = True
         previous_crossing_score = old_crossing_score
+        #iterate over all edges to check that each flip in the set individually does not increase the crossing score
         for edge in sorted(flip_set_normalized):
           can_flip_step = neighbor.flip_edge(edge[0], edge[1])
           if not can_flip_step:
@@ -116,13 +118,16 @@ def exhaustive_simultanious_flip_graph_search(
           continue # skip sets that do not monotonically decrease the crossing score at each individual flip
       else:
         neighbor.flip_edges_simultaneous(flip_set)
+      intersection_diff = None
       if only_flip_descreasing_intersection_score:
         new_score = neighbor.count_geometric_crossings_with(target)
-        if old_crossing_score is not None and new_score >= old_crossing_score:
-          neighbor.destroy()
-          continue #skip flips that do not decrease the intersection score if we are only interested in those
+        if old_crossing_score is not None:
+          intersection_diff = new_score - old_crossing_score
+          if intersection_diff >= 0:
+            neighbor.destroy()
+            continue #skip flips that do not decrease the intersection score if we are only interested in those
       if neighbor == target:
-        result_path = path + [StepData(flip_set, maximal_set)]
+        result_path = path + [StepData(flip_set, maximal_set, intersection_diff)]
         results.append(result_path)
         optimal_depth = len(result_path)
         neighbor.destroy()
@@ -134,17 +139,17 @@ def exhaustive_simultanious_flip_graph_search(
         # Allow revisiting states at the same depth to find all paths possible
         if h not in visited or visited[h][0] >= new_depth:
           visited[h] = (new_depth, visited[h][1] or is_all_maximal if h in visited else is_all_maximal)
-          queue.append(SearchState(neighbor, path + [StepData(flip_set, maximal_set)]))
+          queue.append(SearchState(neighbor, path + [StepData(flip_set, maximal_set, intersection_diff)]))
         else:
           neighbor.destroy()
       else:
         if h not in visited:
           visited[h] = (new_depth, is_all_maximal)
-          queue.append(SearchState(neighbor, path + [StepData(flip_set, maximal_set)]))
+          queue.append(SearchState(neighbor, path + [StepData(flip_set, maximal_set, intersection_diff)]))
         elif visited[h][0] == new_depth and not visited[h][1] and is_all_maximal:
           # We previously arrived at this state with a non all-maximal path, but now we have an all-maximal one.
           visited[h] = (new_depth, True)
-          queue.append(SearchState(neighbor, path + [StepData(flip_set, maximal_set)]))
+          queue.append(SearchState(neighbor, path + [StepData(flip_set, maximal_set, intersection_diff)]))
         else:
           neighbor.destroy()
     if current_tri is not source and current_tri is not target:
