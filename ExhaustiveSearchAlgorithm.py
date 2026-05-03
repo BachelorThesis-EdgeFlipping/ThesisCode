@@ -24,6 +24,7 @@ def exhaustive_simultanious_flip_graph_search(
   only_flip_descreasing_intersection_score: bool = False,
   never_flip_positive_intersection_score_for_individual_flips: bool = False,
   only_one_path_per_state: bool = False,
+  only_single_flips: bool = False,
   timeout: float = 600.0
 ) -> tuple[list[list[StepData]] | None, bool]: # returns (list of paths, did_timeout)
   source_vertices = tuple(sorted((v.x, v.y) for v in source.vertices))
@@ -85,6 +86,8 @@ def exhaustive_simultanious_flip_graph_search(
       he = current_tri.find_edge_by_ids(v1, v2)
       edge_face_map[(v1, v2)] = (he.face.id, he.twin.face.id)
     for flip_set in flip_sets:
+      if only_single_flips and len(flip_set) > 1:
+        continue
       # check if flip_set is maximal: no flippable edge outside the set can be added
       used_faces: set[int] = set()
       flip_set_normalized = set(map(lambda e: (min(e[0], e[1]), max(e[0], e[1])), flip_set))

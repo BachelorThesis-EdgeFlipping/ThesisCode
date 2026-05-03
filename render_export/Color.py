@@ -47,8 +47,10 @@ class Color(Enum):
   LIGHT_SALMON  = (255, 180, 170)
   #extra
   INVISIBLE   = (0, 0, 0, 0) #fully transparent
+  FAINT_LIGHT_GREEN = LIGHT_GREEN + (100,)
+  FAINT_LIGHT_PURPLE = LIGHT_PURPLE + (100,)
+  
   #full transformation
-
   L_0_0 = (255, 70, 70)
   L_0_1 = LIGHT_LIGHT_GRAY #(255, 225, 225)
   L_0_2 = LIGHT_LIGHT_GRAY #(255, 235, 235)
@@ -70,12 +72,13 @@ class Color(Enum):
   L_4_2 = LIGHT_LIGHT_GRAY #(225, 240, 255)
 
   L_5_0 = (140, 60, 255)
-  L_5_1 = LIGHT_LIGHT_GRAY #(230, 210, 255)
-  L_5_2 = LIGHT_LIGHT_GRAY #(240, 225, 255)
+  L_5_1 = LIGHT_GRAY #(230, 210, 255)
+  L_5_2 = LIGHT_GRAY #(240, 225, 255)
 
   L_6_0 = (255, 60, 170)
-  L_6_1 = LIGHT_LIGHT_GRAY #(255, 210, 235)
-  L_6_2 = LIGHT_LIGHT_GRAY #(255, 225, 240)
+  L_6_1 = LIGHT_GRAY #(255, 210, 235)
+  L_6_2 = LIGHT_GRAY #(255, 225, 240)
+
 
   def value_normalized(self):
     return tuple(value / 255 for value in self.value)
