@@ -80,10 +80,10 @@ render_edges_inclined_right = [
   RE((n, 3)),
 ]
 
-draw_channel_triangulation(n, [], filename="HE_hurtardo_polygon", labels=labels)
-draw_channel_triangulation(n, render_edges=render_edges_1, filename="HE_channel", labels=labels)
-draw_channel_triangulation(n, render_edges_1, filename="HE_progress_flip_1", color_faces=color_faces_1, color_vertices=color_vertices_1, labels=labels)
-draw_channel_triangulation(n, render_edges_2, filename="HE_progress_flip_2", color_faces=color_faces_2, color_vertices=color_vertices_2, labels=labels)
-draw_channel_triangulation(n, render_edges=render_edges_inclined_left, filename="HE_channel_inclined_left", labels=labels)
-draw_channel_triangulation(n, render_edges=render_edges_inclined_right, filename="HE_channel_inclined_right", labels=labels)
+draw_channel_triangulation(n, [], filename="HE_hurtardo_polygon", title=r"$H_5$" , labels=labels)
+draw_channel_triangulation(n, render_edges=render_edges_1, filename="HE_channel", title=r"$T \in CH_5$", labels=labels)
+draw_channel_triangulation(n, render_edges_1, filename="HE_progress_flip_1", title=r"$T \in CH_5$" ,color_faces=color_faces_1, color_vertices=color_vertices_1, labels=labels)
+draw_channel_triangulation(n, render_edges_2, filename="HE_progress_flip_2",title=r"$T' \in CH_5$" ,color_faces=color_faces_2, color_vertices=color_vertices_2, labels=labels)
+draw_channel_triangulation(n, render_edges=render_edges_inclined_left, title=r"$CH_5^L$", filename="HE_channel_inclined_left", labels=labels)
+draw_channel_triangulation(n, render_edges=render_edges_inclined_right, title=r"$CH_5^R$",  filename="HE_channel_inclined_right", labels=labels)
 #exec: python -m 

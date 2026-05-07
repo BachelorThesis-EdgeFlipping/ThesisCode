@@ -231,6 +231,7 @@ draw_channel_triangulation(
   n,
   render_edges_0_0, 
   filename="HE_direct_transformation_full_0_0",
+  title=r"$t_0 = CH^L_5$",
   color_faces=color_faces_0_0,
   labels=labels
 )
@@ -238,12 +239,14 @@ draw_channel_triangulation(
   n,
   render_edges_0_1, 
   filename="HE_direct_transformation_full_0_1",
+  title=r"$t_1$",
   labels=labels
 )
 draw_channel_triangulation(
   n,
   render_edges_1_0, 
   filename="HE_direct_transformation_full_1_0",
+  title=r"$t_1$",
   color_faces=color_faces_1_0,
   labels=labels
 )
@@ -251,12 +254,14 @@ draw_channel_triangulation(
   n,
   render_edges_1_1, 
   filename="HE_direct_transformation_full_1_1",
+  title=r"$t_2$",
   labels=labels
 )
 draw_channel_triangulation(
   n,
   render_edges_2_0, 
   filename="HE_direct_transformation_full_2_0",
+  title=r"$t_2$",
   color_faces=color_faces_2_0,
   labels=labels
 )
@@ -264,12 +269,14 @@ draw_channel_triangulation(
   n,
   render_edges_2_1, 
   filename="HE_direct_transformation_full_2_1",
+  title=r"$t_3$",
   labels=labels
 )
 draw_channel_triangulation(
   n,
   render_edges_3_0, 
   filename="HE_direct_transformation_full_3_0",
+  title=r"$t_3$",
   color_faces=color_faces_3_0,
   labels=labels
 )
@@ -277,12 +284,14 @@ draw_channel_triangulation(
   n,
   render_edges_3_1, 
   filename="HE_direct_transformation_full_3_1",
+  title=r"$t_4$",
   labels=labels
 )
 draw_channel_triangulation(
   n,
   render_edges_4_0, 
   filename="HE_direct_transformation_full_4_0",
+  title=r"$t_4$",
   color_faces=color_faces_4_0,
   labels=labels
 )
@@ -290,12 +299,14 @@ draw_channel_triangulation(
   n,
   render_edges_4_1, 
   filename="HE_direct_transformation_full_4_1",
+  title=r"$t_5$",
   labels=labels
 )
 draw_channel_triangulation(
   n,
   render_edges_5_0, 
   filename="HE_direct_transformation_full_5_0",
+  title=r"$t_5$",
   color_faces=color_faces_5_0,
   labels=labels
 )
@@ -303,12 +314,14 @@ draw_channel_triangulation(
   n,
   render_edges_5_1, 
   filename="HE_direct_transformation_full_5_1",
+  title=r"$t_6$",
   labels=labels
 )
 draw_channel_triangulation(
   n,
   render_edges_6_0, 
   filename="HE_direct_transformation_full_6_0",
+  title=r"$t_6$",
   color_faces=color_faces_6_0,
   labels=labels
 )
@@ -316,6 +329,7 @@ draw_channel_triangulation(
   n,
   render_edges_7, 
   filename="HE_direct_transformation_full_7",
+  title=r"$t_7=CH^R_5$",
   labels=labels
 )
 

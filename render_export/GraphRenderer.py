@@ -14,6 +14,11 @@ LINE_STYLE = Literal["solid", "dashed", "dotted"]
 #####################
 #  Default Config   #
 #####################
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif",
+    "font.serif": ["Computer Modern Roman"],
+})
 
 # AX
 AX_MARGIN = 0.15
@@ -31,12 +36,14 @@ EDGE_HIGHLIGHT_ALPHA = 0.2
 FIGSIZE = (4, 4)
 BACKGROUND_COLOR = Color.INVISIBLE
 TITLE_BACKGROUND_COLOR = Color.LIGHT_GRAY
+TITLE_FONT_FAMILY = "serif"
 # Channel
 CHANNEL_ARCH_FACTOR = 0.12
 # Label
 SHOW_LABELS = False
 LABEL_COLOR = Color.BLACK
 LABEL_FONT_SIZE = 12
+LABEL_FONT_FAMILY = "serif"
 LABEL_OFFSET = 0.15
 
 ##################
@@ -225,7 +232,7 @@ def _draw_and_export(G: nx.Graph, pos: dict, render_edges: list[RenderEdge], col
   plt.figure(figsize=FIGSIZE, facecolor=BACKGROUND_COLOR.value_normalized())
   
   if title:
-    plt.title(title, loc='center', bbox=dict(boxstyle="round,pad=0.3", facecolor=TITLE_BACKGROUND_COLOR.value_normalized(), edgecolor='none', alpha=0.5))
+    plt.title(title, loc='center', fontfamily=TITLE_FONT_FAMILY, bbox=dict(boxstyle="round,pad=0.3", facecolor=TITLE_BACKGROUND_COLOR.value_normalized(), edgecolor='none', alpha=0.5))
   if color_faces:
     ax = plt.gca()
     for cf in color_faces:
@@ -233,7 +240,8 @@ def _draw_and_export(G: nx.Graph, pos: dict, render_edges: list[RenderEdge], col
         triangle = plt.Polygon([pos[v] for v in cf.vertices], color=cf.color.value_normalized(), zorder=1)
         ax.add_patch(triangle)
   if hl_edges:
-    hl_col = nx.draw_networkx_edges(G.edge_subgraph(hl_edges), pos,
+    hl_col = nx.draw_networkx_edges(G, pos,
+        edgelist=hl_edges,
         edge_color=[c.value_normalized() for c in hl_colors],
         width=hl_widths,
         alpha=EDGE_HIGHLIGHT_ALPHA,
@@ -246,7 +254,8 @@ def _draw_and_export(G: nx.Graph, pos: dict, render_edges: list[RenderEdge], col
             hl_col.set_zorder(2)
 
   if bg_edges:
-    bg_col = nx.draw_networkx_edges(G.edge_subgraph(bg_edges), pos,
+    bg_col = nx.draw_networkx_edges(G, pos,
+        edgelist=bg_edges,
         edge_color=[c.value_normalized() for c in bg_colors],
         width=bg_widths,
         style="solid",
@@ -259,8 +268,9 @@ def _draw_and_export(G: nx.Graph, pos: dict, render_edges: list[RenderEdge], col
             bg_col.set_zorder(2)
 
   # Draw main edges without inline labels
-  m_col = nx.draw_networkx_edges(G.edge_subgraph(m_edges), pos,
-      edge_color=[c.value_normalized() for c in m_colors] ,
+  m_col = nx.draw_networkx_edges(G, pos,
+      edgelist=m_edges,
+      edge_color=[c.value_normalized() for c in m_colors],
       width=m_widths,
       style=m_styles,
       node_size=0)
@@ -270,7 +280,6 @@ def _draw_and_export(G: nx.Graph, pos: dict, render_edges: list[RenderEdge], col
               c.set_zorder(3)
       else:
           m_col.set_zorder(3)
-
   # Draw labels using calculated free space
   should_draw_labels = SHOW_LABELS if labels is None else True
   if should_draw_labels and labels_dict:
@@ -278,6 +287,7 @@ def _draw_and_export(G: nx.Graph, pos: dict, render_edges: list[RenderEdge], col
     nx.draw_networkx_labels(G, label_pos,
         labels=labels_dict,
         font_size=LABEL_FONT_SIZE,
+        font_family=LABEL_FONT_FAMILY,
         font_color=LABEL_COLOR.value_normalized())
 
   #Draw vertices as rings

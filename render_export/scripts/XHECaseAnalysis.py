@@ -5,7 +5,7 @@ from render_export.Aliases import *
 order = 12
 C_HE = Color.BLUE
 C_DADDY = Color.ORANGE
-C_JUVENILE = Color.PURPLE
+C_JUVENILE = Color.MAGENTA
 
 title_before = r"$T_i\ &\ T_{i+1}$"
 title_after = r"$N(T_i)\ &\ N(T_{i+1})$"
@@ -174,7 +174,7 @@ color_vertices_3 = [
 #Case 4
 
 labels_4 = [
-  r"$A^{\gamma}$/A^e$", #0
+  r"$A^{\gamma}$", #0
   "", #1
   "", #2
   r"$B^{\gamma}$", #3
@@ -216,7 +216,7 @@ labels_5 = [
   "", #1
   "", #2
   "", #3
-  r"$B^{\gamma}/A^e$", #4
+  r"$B^{\gamma}$", #4
   "", #5
   "", #6
   r"$C^{\gamma}$", #7
