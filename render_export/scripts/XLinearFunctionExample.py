@@ -14,7 +14,7 @@ x_bounds = (4, 45)
 y_bounds = (0, 100)
 
 # Initialize the graph
-graph = StatisticsGraph(title='Extrapolation of Group 1', xlabel='Number of vertices', ylabel='Percentage (%)', markersize=4)
+graph = StatisticsGraph(title='', xlabel='Number of vertices', ylabel='Success rate (%)', markersize=4)
 
 # Example: Fill area between the two linear trends
 graph.fill_between_linear_functions(
@@ -31,9 +31,9 @@ graph.fill_between_linear_functions(
 )
 
 #data points
-graph.add_dataset('Data I.H.', vertices, either, Color.PURPLE, 's', connected=False)
+graph.add_dataset('Data Dual MIS search', vertices, either, Color.PURPLE, 's', connected=False)
 graph.add_linear_function(
-    label='Expected trend I.H.',
+    label='Expected trend Dual MIS search',
     m=i_h_trend_m,
     c=i_h_trend_c,
     color=Color.PURPLE,
@@ -41,9 +41,9 @@ graph.add_linear_function(
     y_bounds=y_bounds,
     linestyle='solid'
 )
-graph.add_dataset('Data S.H.', vertices, oms, Color.ORANGE, 'o', connected=False)
+graph.add_dataset('Data MIS search', vertices, oms, Color.ORANGE, 'o', connected=False)
 graph.add_linear_function(
-    label='Expected trend S.H.',
+    label='Expected trend MIS search',
     m=s_h_trend_m,
     c=s_h_trend_c,
     color=Color.ORANGE,

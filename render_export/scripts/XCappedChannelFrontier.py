@@ -4,6 +4,15 @@ from render_export.Aliases import *
 
 n = 5
 
+info_box = InfoBox(
+  items=[
+    InfoBoxItem(r"$A_{i'}B_{j'}$ (frontier edge)",Color.BLUE),
+    InfoBoxItem(r"$A_{i''}B_{j''}$",Color.ORANGE),
+  ],
+  loc="upper left",
+  bbox_to_anchor=(-0.48, 1.12)
+)
+
 labels = [
   "$A_1$",
   "$A_2$",
@@ -39,4 +48,4 @@ color_vertices_1 = [
 ]
 
 
-draw_capped_channel_triangulation(n, render_edges, filename="HE_frontier_edge_1", labels=labels)
+draw_capped_channel_triangulation(n, render_edges, info_box=info_box, filename="HE_frontier_edge_1", title=r"$T \in CH^O_5$", labels=labels)

@@ -4,6 +4,14 @@ from render_export.Aliases import *
 
 n = 5
 
+info_box = InfoBox(
+  items=[
+    InfoBoxItem(r"outermost $O$-edges",Color.BLUE)
+  ],
+  loc="upper left",
+  bbox_to_anchor=(-0.48, 1.12)
+)
+
 labels = [
   "$A_1$",
   "$A_2$",
@@ -24,10 +32,10 @@ render_edges = [
   RE((2*n, 3)),
   RE((2*n, 4), Color.BLUE),
   RE((2*n, n+1)),
-  RE((2*n, n+2), Color.ORANGE),
+  RE((2*n, n+2), Color.BLUE),
 
   RE((n-1, n+2)),
   RE((n-1, n+3)),
 ]
 
-draw_capped_channel_triangulation(n, render_edges, filename="HE_mouth_edges", labels=labels)
+draw_capped_channel_triangulation(n, render_edges, info_box=info_box, filename="HE_mouth_edges", title=r"$T \in CH^O_5$", labels=labels)

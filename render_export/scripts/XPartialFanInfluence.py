@@ -20,6 +20,18 @@ labels = [
 
 h_c_1 = Color.LIGHT_ORANGE
 h_c_2 = Color.FAINT_LIGHT_GREEN
+
+
+info_box = InfoBox(
+  items=[
+    InfoBoxItem("center edge", Color.BLUE),
+    InfoBoxItem("right half", h_c_2, width=6),
+    InfoBoxItem(r"$O$-fan \\ influence", h_c_1, width=6),
+  ],
+  loc="upper left",
+  bbox_to_anchor=(-0.4, 1.12)
+)
+
 render_edges = [
   RE((1,10)),
   RE((6,10)),
@@ -49,10 +61,9 @@ draw_capped_channel_triangulation(
   n,
   render_edges, 
   filename="HE_partial_fan_influence",
+  title=r"$T \in CH^O_5$",
+  info_box=info_box,
   color_faces=color_faces,
   labels=labels
 )
 
-
-
-#exec: python -m 

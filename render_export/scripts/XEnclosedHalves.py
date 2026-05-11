@@ -17,10 +17,31 @@ labels = [
   "$B_5$"
 ]
 
+
 center_edge_h_w = 2
 center_edge_h_c = Color.BLUE
 h_c_1 = Color.FAINT_LIGHT_PURPLE
 h_c_2 = Color.FAINT_LIGHT_GREEN
+
+info_box_left = InfoBox(
+  items=[
+    InfoBoxItem("center edge", center_edge_h_c),
+    InfoBoxItem("left half", h_c_1, width=6),
+  ],
+  loc="upper left",
+  bbox_to_anchor=(-0.4, 1.12)
+)
+
+
+info_box_right = InfoBox(
+  items=[
+    InfoBoxItem("center edge", center_edge_h_c),
+    InfoBoxItem("right half", h_c_2, width=6),
+  ],
+  loc="upper left",
+  bbox_to_anchor=(-0.4, 1.12)
+)
+
 render_edges_1 = [
   RE((0,6)),
   RE((0,7)),
@@ -75,6 +96,8 @@ draw_channel_triangulation(
   n,
   render_edges_1, 
   filename="HE_closed_halves_1_left",
+  title=r"$CH^L_5$",
+  info_box=info_box_left,
   color_faces=color_faces_1_1,
   labels=labels
 )
@@ -82,6 +105,8 @@ draw_channel_triangulation(
   n,
   render_edges_1, 
   filename="HE_closed_halves_1_right",
+  title=r"$CH^L_5$",
+  info_box=info_box_right,
   color_faces=color_faces_1_2,
   labels=labels
 )
@@ -89,6 +114,8 @@ draw_channel_triangulation(
   n,
   render_edges_2, 
   filename="HE_closed_halves_2_left",
+  title=r"$T\in CH_5$",
+  info_box=info_box_left,
   color_faces=color_faces_2_1,
   labels=labels
 )
@@ -96,7 +123,9 @@ draw_channel_triangulation(
   n,
   render_edges_2, 
   filename="HE_closed_halves_2_right",
+  title=r"$T\in CH_5$",
   color_faces=color_faces_2_2,
+  info_box=info_box_right,
   labels=labels
 )
 

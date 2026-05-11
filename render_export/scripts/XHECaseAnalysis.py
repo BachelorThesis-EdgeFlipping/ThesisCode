@@ -7,8 +7,8 @@ C_HE = Color.BLUE
 C_DADDY = Color.ORANGE
 C_JUVENILE = Color.MAGENTA
 
-title_before = r"$T_i\ &\ T_{i+1}$"
-title_after = r"$N(T_i)\ &\ N(T_{i+1})$"
+title_before = r"$T_i\ \& \ T_{i+1}$"
+title_after = r"$N(T_i)\ \& \ N(T_{i+1})$"
 
 info_box_before = InfoBox(
   items=[
