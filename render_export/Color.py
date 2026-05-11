@@ -84,3 +84,18 @@ class Color(Enum):
 
   def value_normalized(self):
     return tuple(value / 255 for value in self.value)
+
+  @staticmethod
+  def from_tuple(t: tuple):
+    try:
+      return Color(t)
+    except ValueError:
+      class CustomColor:
+        def __init__(self, val):
+          self.value = val
+        def value_normalized(self):
+          return tuple(v / 255 for v in self.value)
+      return CustomColor(t)
+
+  def make_transparent(self, transparency: int):
+    return Color.from_tuple(self.value + (transparency,))

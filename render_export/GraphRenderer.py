@@ -44,7 +44,7 @@ SHOW_LABELS = False
 LABEL_COLOR = Color.BLACK
 LABEL_FONT_SIZE = 12
 LABEL_FONT_FAMILY = "serif"
-LABEL_OFFSET = 0.15
+LABEL_OFFSET = 0.2
 
 ##################
 # Data Classes   #
@@ -100,6 +100,14 @@ class ColorFace:
 class ColorVertex:
   vertex: int
   color: Color
+
+@dataclass
+class EdgeLabel:
+  edge: tuple[int, int]
+  label: str
+  color: Color = LABEL_COLOR
+  bg_color: Color = Color.INVISIBLE
+  offset: float = LABEL_OFFSET
 
 @dataclass
 class InfoBoxItem:
@@ -224,7 +232,7 @@ def _calculate_label_positions(G: nx.Graph, pos: dict, border_edges: list[tuple[
                        pos[node][1] + by * LABEL_OFFSET)
   return label_pos
 
-def _draw_and_export(G: nx.Graph, pos: dict, render_edges: list[RenderEdge], color_faces: list[ColorFace], filename: str, labels: list[str] = None, border_edges: list[tuple[int, int]] = None, color_vertices: list[ColorVertex] = None, info_box: InfoBox = None, title: str = None, margin: float = AX_MARGIN):
+def _draw_and_export(G: nx.Graph, pos: dict, render_edges: list[RenderEdge], color_faces: list[ColorFace], filename: str, labels: list[str] = None, border_edges: list[tuple[int, int]] = None, color_vertices: list[ColorVertex] = None, info_box: InfoBox = None, title: str = None, margin: float = AX_MARGIN, edge_labels: list[EdgeLabel] = None):
   labels_dict = {i: str(labels[i]) for i in range(min(len(labels), len(pos)))} if labels is not None else None
   
   #Draw the graph and export as SVG
@@ -331,6 +339,34 @@ def _draw_and_export(G: nx.Graph, pos: dict, render_edges: list[RenderEdge], col
       legend_kwargs['bbox_to_anchor'] = info_box.bbox_to_anchor
     ax.legend(handles=legend_handles, **legend_kwargs)
 
+  if edge_labels:
+    cx = sum(p[0] for p in pos.values()) / len(pos)
+    cy = sum(p[1] for p in pos.values()) / len(pos)
+    for el in edge_labels:
+      u, v = el.edge
+      if u not in pos or v not in pos:
+        continue
+      mx = (pos[u][0] + pos[v][0]) / 2.0
+      my = (pos[u][1] + pos[v][1]) / 2.0
+      
+      out_x = mx - cx
+      out_y = my - cy
+      length = math.hypot(out_x, out_y)
+      if length > 1e-5:
+        out_x /= length
+        out_y /= length
+      else:
+        out_x, out_y = 0, 1
+      
+      lx = mx + out_x * el.offset
+      ly = my + out_y * el.offset
+      
+      bbox = None
+      if el.bg_color != Color.INVISIBLE:
+         bbox = dict(boxstyle="round,pad=0.2", facecolor=el.bg_color.value_normalized(), edgecolor='none')
+         
+      plt.text(lx, ly, el.label, color=el.color.value_normalized(), fontsize=LABEL_FONT_SIZE, fontfamily=LABEL_FONT_FAMILY, ha='center', va='center', bbox=bbox, zorder=5)
+
   # Remove from limits computation from graph print
   # print(f"{filename} limits: x={ax.get_xlim()} y={ax.get_ylim()}")
   export_path = f"{DEFAULT_EXPORT_PATH}/{filename}.svg"
@@ -340,7 +376,7 @@ def _draw_and_export(G: nx.Graph, pos: dict, render_edges: list[RenderEdge], col
 
 # Rendering Interface #
 #######################
-def draw_channel_triangulation(n: int, render_edges: list[RenderEdge], filename: str, color_faces: list[ColorFace] = None, labels: list[str] = None, color_vertices: list[ColorVertex] = None, info_box: InfoBox = None, title: str = None, draw_border: bool = True, margin: float = AX_MARGIN):
+def draw_channel_triangulation(n: int, render_edges: list[RenderEdge], filename: str, color_faces: list[ColorFace] = None, labels: list[str] = None, color_vertices: list[ColorVertex] = None, info_box: InfoBox = None, title: str = None, draw_border: bool = True, margin: float = AX_MARGIN, edge_labels: list[EdgeLabel] = None):
   # Channel triangulation with n vertices at the top and n at the bottom
   G = nx.Graph()
   pos = _channel_positions(n)
@@ -360,9 +396,9 @@ def draw_channel_triangulation(n: int, render_edges: list[RenderEdge], filename:
   if draw_border:
     G.add_edges_from(border_edges)
   G.add_edges_from([e.edge for e in render_edges])
-  _draw_and_export(G, pos, render_edges, color_faces, filename, labels=labels, border_edges=border_edges, color_vertices=color_vertices, info_box=info_box, title=title, margin=margin)
+  _draw_and_export(G, pos, render_edges, color_faces, filename, labels=labels, border_edges=border_edges, color_vertices=color_vertices, info_box=info_box, title=title, margin=margin, edge_labels=edge_labels)
 
-def draw_capped_channel_triangulation(n: int, render_edges: list[RenderEdge], filename: str, color_faces: list[ColorFace] = None, labels: list[str] = None, color_vertices: list[ColorVertex] = None, info_box: InfoBox = None, title: str = None, draw_border: bool = True, margin: float = AX_MARGIN):
+def draw_capped_channel_triangulation(n: int, render_edges: list[RenderEdge], filename: str, color_faces: list[ColorFace] = None, labels: list[str] = None, color_vertices: list[ColorVertex] = None, info_box: InfoBox = None, title: str = None, draw_border: bool = True, margin: float = AX_MARGIN, edge_labels: list[EdgeLabel] = None):
   # Capped channel triangulation with n vertices at the top and n at the bottom, plus a left cap vertex
   G = nx.Graph()
   pos = _channel_positions(n)
@@ -392,9 +428,9 @@ def draw_capped_channel_triangulation(n: int, render_edges: list[RenderEdge], fi
   if draw_border:
     G.add_edges_from(border_edges)
   G.add_edges_from([e.edge for e in render_edges])
-  _draw_and_export(G, pos, render_edges, color_faces, filename, labels=labels, border_edges=border_edges, color_vertices=color_vertices, info_box=info_box, title=title, margin=margin)
+  _draw_and_export(G, pos, render_edges, color_faces, filename, labels=labels, border_edges=border_edges, color_vertices=color_vertices, info_box=info_box, title=title, margin=margin, edge_labels=edge_labels)
 
-def draw_polygon_triangulation(order: int, render_edges: list[RenderEdge], filename: str, color_faces: list[ColorFace] = None, labels: list[str] = None, color_vertices: list[ColorVertex] = None, info_box: InfoBox = None, title: str = None, draw_border: bool = True, margin: float = AX_MARGIN):
+def draw_polygon_triangulation(order: int, render_edges: list[RenderEdge], filename: str, color_faces: list[ColorFace] = None, labels: list[str] = None, color_vertices: list[ColorVertex] = None, info_box: InfoBox = None, title: str = None, draw_border: bool = True, margin: float = AX_MARGIN, edge_labels: list[EdgeLabel] = None):
   #Triangulation of a convex polygon with diagonals
   G = nx.Graph()
   pos = _polygon_positions(order)
@@ -403,9 +439,9 @@ def draw_polygon_triangulation(order: int, render_edges: list[RenderEdge], filen
   if draw_border:
     G.add_edges_from(border_edges)
   G.add_edges_from([e.edge for e in render_edges])
-  _draw_and_export(G, pos, render_edges, color_faces, filename, labels=labels, border_edges=border_edges, color_vertices=color_vertices, info_box=info_box, title=title, margin=margin)
+  _draw_and_export(G, pos, render_edges, color_faces, filename, labels=labels, border_edges=border_edges, color_vertices=color_vertices, info_box=info_box, title=title, margin=margin, edge_labels=edge_labels)
 
-def draw_advanced_polygon_triangulation(order: int, extra_vertices: list[ExtraVertex], render_edges: list[RenderEdge], filename: str, color_faces: list[ColorFace] = None, labels: list[str] = None, color_vertices: list[ColorVertex] = None, info_box: InfoBox = None, title: str = None, margin: float = AX_MARGIN):
+def draw_advanced_polygon_triangulation(order: int, extra_vertices: list[ExtraVertex], render_edges: list[RenderEdge], filename: str, color_faces: list[ColorFace] = None, labels: list[str] = None, color_vertices: list[ColorVertex] = None, info_box: InfoBox = None, title: str = None, margin: float = AX_MARGIN, edge_labels: list[EdgeLabel] = None):
   #Polygon base with additional vertices placed along edges
   G = nx.Graph()
   pos = _polygon_positions(order)
@@ -424,9 +460,9 @@ def draw_advanced_polygon_triangulation(order: int, extra_vertices: list[ExtraVe
   border_edges = [(i, (i + 1) % order) for i in range(order)]
   G.add_edges_from(border_edges)
   G.add_edges_from([e.edge for e in render_edges])
-  _draw_and_export(G, pos, render_edges, color_faces, filename, labels=labels, border_edges=border_edges, color_vertices=color_vertices, info_box=info_box, title=title, margin=margin)
+  _draw_and_export(G, pos, render_edges, color_faces, filename, labels=labels, border_edges=border_edges, color_vertices=color_vertices, info_box=info_box, title=title, margin=margin, edge_labels=edge_labels)
 
-def draw_arbitrary_triangulation(vertices: list[FreeVertex], render_edges: list[RenderEdge], filename: str, color_faces: list[ColorFace] = None, labels: list[str] = None, color_vertices: list[ColorVertex] = None, info_box: InfoBox = None, title: str = None):
+def draw_arbitrary_triangulation(vertices: list[FreeVertex], render_edges: list[RenderEdge], filename: str, color_faces: list[ColorFace] = None, labels: list[str] = None, color_vertices: list[ColorVertex] = None, info_box: InfoBox = None, title: str = None, edge_labels: list[EdgeLabel] = None):
   #Fully free triangulation, all vertex positions and edges are manual
   #Vertex indices correspond to list order (0, 1, 2, ...)
   #No border edges are added automatically
@@ -436,4 +472,4 @@ def draw_arbitrary_triangulation(vertices: list[FreeVertex], render_edges: list[
       pos[i] = (v.x, 1.0 - v.y)
   G.add_nodes_from(pos.keys())
   G.add_edges_from([e.edge for e in render_edges])
-  _draw_and_export(G, pos, render_edges, color_faces, filename, labels=labels, color_vertices=color_vertices, info_box=info_box, title=title)
+  _draw_and_export(G, pos, render_edges, color_faces, filename, labels=labels, color_vertices=color_vertices, info_box=info_box, title=title, edge_labels=edge_labels)
