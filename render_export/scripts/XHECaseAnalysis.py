@@ -6,6 +6,7 @@ order = 12
 C_HE = Color.BLUE
 C_DADDY = Color.ORANGE
 C_JUVENILE = Color.MAGENTA
+sw = 2 #subsumation width
 
 title_before = r"$T_i\ \& \ T_{i+1}$"
 title_after = r"$N(T_i)\ \& \ N(T_{i+1})$"
@@ -22,8 +23,8 @@ info_box_before = InfoBox(
 info_box_after = InfoBox(
   items=[
     InfoBoxItem(r"$e$", C_HE),
-    InfoBoxItem(r"$e_\varepsilon$", C_DADDY),
-    InfoBoxItem(r"$e_\phi$", C_JUVENILE),
+    InfoBoxItem(r"$n(\varepsilon(f))$", C_DADDY),
+    InfoBoxItem(r"$n(\phi(f))$", C_JUVENILE),
   ],
   loc="upper left",
   bbox_to_anchor=(-0.12, 1.12)
@@ -34,18 +35,18 @@ info_box_after = InfoBox(
 # Case 1
 
 labels_1 = [
-  r"$A^e$", #0
+  r"$X^e$", #0
   "", #1
   "", #2
   "", #3
-  r"$B^{\gamma}$", #4
+  r"$B$", #4
   "", #5
   "", #6
-  r"$C^{\gamma}$", #7
+  r"$C$", #7
   "", #8
-  r"$D^{\gamma}$", #9
+  r"$D$", #9
   "", #10
-  r"$A^{\gamma}$", #11
+  r"$A$", #11
 ]
 render_edges_1_before = [
   RE((4,7)),
@@ -73,16 +74,16 @@ color_vertices_1 = [
 #Case 2
 
 labels_2 = [
-  r"$A^{\gamma}$", #0
+  r"$A$", #0
   "", #1
   "", #2
-  r"$B^{\gamma}$", #3
-  r"$A^e$", #4
+  r"$B$", #3
+  r"$X^e$", #4
   "", #5
-  r"$C^{\gamma}$", #6
+  r"$C$", #6
   "", #7
   "", #8
-  r"$D^{\gamma}$", #9
+  r"$D$", #9
   "", #10
   "", #11
 ]
@@ -102,6 +103,7 @@ render_edges_2_1_after = [
   RE((0,9)),
   RE((0,4), C_DADDY),
   RE((3,9), C_JUVENILE),
+  RE((4,6), bg_color=EDGE_COLOR, color=C_DADDY, edge_style="dashed", width=sw, bg_width=sw),
   RE((4,8), C_HE),
 ]
 render_edges_2_2_before = [
@@ -120,6 +122,7 @@ render_edges_2_2_after = [
   RE((0,9)),
   RE((0,6), C_DADDY),
   RE((4,9), C_JUVENILE),
+  RE((3,4), bg_color=EDGE_COLOR, color=C_JUVENILE, edge_style="dashed", width=sw, bg_width=sw),
   RE((1,4), C_HE),
 ]
 color_vertices_2 = [
@@ -132,16 +135,16 @@ color_vertices_2 = [
 # Case 3
 
 labels_3 = [
-  r"$A^{\gamma}$", #0
+  r"$A$", #0
   "", #1
-  r"$A^e$", #2
+  r"$X^e$", #2
   "", #3
-  r"$B^{\gamma}$", #4
+  r"$B$", #4
   "", #5
-  r"$C^{\gamma}$", #6
+  r"$C$", #6
   "", #7
   "", #8
-  r"$D^{\gamma}$", #9
+  r"$D$", #9
   "", #10
   "", #11
 ]
@@ -155,12 +158,12 @@ render_edges_3_before = [
   RE((2,8), C_HE, edge_style="dotted"),
 ]
 render_edges_3_after = [
-  RE((0,2), bg_color=EDGE_COLOR, color=C_DADDY, edge_style="dashed"),
-  RE((2,4), bg_color=EDGE_COLOR, color=C_JUVENILE, edge_style="dashed"),
+  RE((0,2),  bg_color=EDGE_COLOR, color=C_DADDY, edge_style="dashed", width=sw, bg_width=sw),
+  RE((2,4), bg_color=EDGE_COLOR, color=C_JUVENILE, edge_style="dashed", width=sw, bg_width=sw),
   RE((4,6)),
-  RE((2,6), bg_color=EDGE_COLOR, color=C_DADDY, edge_style="dashed"),
+  RE((2,6), bg_color=EDGE_COLOR, color=C_DADDY, edge_style="dashed", width=sw, bg_width=sw),
   RE((0,9)),
-  RE((2,9), bg_color=EDGE_COLOR, color=C_JUVENILE, edge_style="dashed"),
+  RE((2,9), bg_color=EDGE_COLOR, color=C_JUVENILE, edge_style="dashed", width=sw, bg_width=sw),
   RE((2,8), C_HE),
 ]
 
@@ -174,16 +177,16 @@ color_vertices_3 = [
 #Case 4
 
 labels_4 = [
-  r"$A^{\gamma}$", #0
+  r"$A$", #0
   "", #1
   "", #2
-  r"$B^{\gamma}$", #3
+  r"$B$", #3
   "", #4
   "", #5
-  r"$C^{\gamma}$", #6
+  r"$C$", #6
   "", #7
   "", #8
-  r"$D^{\gamma}$", #9
+  r"$D$", #9
   "", #10
   "", #11
 ]
@@ -192,15 +195,15 @@ render_edges_4_before = [
   RE((3,6)),
   RE((6,9)),
   RE((0,9)),
-  RE((0,6), bg_color=C_DADDY, color=C_HE, edge_style="dotted"),
+  RE((0,6), bg_color=C_DADDY, color=C_HE, edge_style="dotted", width=sw, bg_width=sw),
   RE((3,9), C_JUVENILE),
 ]
 render_edges_4_after = [
-  RE((0,3), bg_color=EDGE_COLOR, color=C_JUVENILE, edge_style="dashed"),
+  RE((0,3), bg_color=EDGE_COLOR, color=C_JUVENILE, edge_style="dashed", width=sw, bg_width=sw),
   RE((3,6)),
   RE((6,9)),
-  RE((0,9), bg_color=EDGE_COLOR, color=C_JUVENILE, edge_style="dashed"),
-  RE((0,6), bg_color=C_HE, color=C_DADDY, edge_style="dashed"),
+  RE((0,9), bg_color=EDGE_COLOR, color=C_JUVENILE, edge_style="dashed", width=sw, bg_width=sw),
+  RE((0,6), bg_color=C_HE, color=C_DADDY, edge_style="dashed", width=sw, bg_width=sw),
 ]
 
 color_vertices_4 = [
@@ -216,20 +219,20 @@ labels_5 = [
   "", #1
   "", #2
   "", #3
-  r"$B^{\gamma}$", #4
+  r"$B$", #4
   "", #5
   "", #6
-  r"$C^{\gamma}$", #7
+  r"$C$", #7
   "", #8
-  r"$D^{\gamma}$", #9
+  r"$D$", #9
   "", #10
-  r"$A^{\gamma}$", #11
+  r"$A$", #11
 ]
 render_edges_5_before = [
   RE((4,7)),
   RE((7,9)),
   RE((9,11)),
-  RE((4,11), bg_color=EDGE_COLOR, color=C_HE, edge_style="dotted"),
+  RE((4,11), bg_color=EDGE_COLOR, color=C_HE, edge_style="dotted", width=sw, bg_width=sw),
   RE((7,11), C_DADDY),
   RE((4,9), C_JUVENILE),
 ]
@@ -237,7 +240,7 @@ render_edges_5_after = [
   RE((4,7)),
   RE((7,9)),
   RE((9,11)),
-  RE((4,11), bg_color=EDGE_COLOR, color=C_HE, edge_style="dashed"),
+  RE((4,11), bg_color=EDGE_COLOR, color=C_HE, edge_style="dashed", width=sw, bg_width=sw),
   RE((7,11), C_DADDY),
   RE((4,9), C_JUVENILE),
 ]

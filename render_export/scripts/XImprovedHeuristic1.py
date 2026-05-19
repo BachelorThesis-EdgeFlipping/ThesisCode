@@ -8,7 +8,7 @@ vertices = [4,5,6,7,8,9,10,11,12,13,14,15]
 oms = [100, 100, 100, 97.6,95.3,93.1,90.8,89.9,87.9,89.7,86.3,82.8]
 either = [100,100, 100, 100, 99.7,99.5,99,98.6,98.4,98.4,95.6,93.1]
 
-graph = StatisticsGraph(title='Group General', xlabel='Number of vertices', ylabel='Success rate (%)')
+graph = StatisticsGraph(title='Group Convex', xlabel='Number of vertices', ylabel='Success rate (%)')
 graph.add_dataset('Dual MIS search', vertices, either, Color.PURPLE, 's')
 graph.add_dataset('MIS search', vertices, oms, Color.ORANGE, 'o')
 graph.fill_between(vertices, [82.8]*len(vertices), oms, Color.LIGHT_ORANGE)

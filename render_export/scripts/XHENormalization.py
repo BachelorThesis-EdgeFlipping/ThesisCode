@@ -21,8 +21,8 @@ C_TYPE_2 = Color.TEAL
 info_box_before = InfoBox(
   items=[
     InfoBoxItem("Type 0", C_TYPE_0, edge_style="dotted"),
-    InfoBoxItem("Type 1", C_TYPE_1),
-    InfoBoxItem(r"$\phi(f)$", C_TYPE_2)
+    InfoBoxItem("Type I", C_TYPE_1),
+    InfoBoxItem("Type II", C_TYPE_2),
   ],
   loc="upper left",
   bbox_to_anchor=(-0.12, 1.12)
