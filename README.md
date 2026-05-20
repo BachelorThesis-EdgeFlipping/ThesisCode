@@ -1,172 +1,142 @@
 # Simultaneous Flip Graph Search — Bachelor Thesis
 
-This repository contains the implementation developed for a bachelor thesis on simultaneous edge flips in triangulation flip graphs. It includes the core data structure, the search algorithm, test instance generators, test executables, and visualization tools used to produce figures for the thesis.
+This repository contains the implementation for a bachelor thesis on **simultaneous edge flips in triangulation flip graphs**. It includes the triangulation data structure, the exhaustive search algorithm, the test executables and their inputs, and the scripts used to produce the figures in the thesis.
 
-## Requirements
+## Setup
 
 ```
 pip install -r Requirements.txt
 ```
 
-Python 3.10+ is required (type hints use newer syntax).
+Dependencies: `networkx`, `matplotlib`, `scipy`, `dataclasses-json`, `pygame` (the last only for the unused interactive app). Python 3.10+ is required.
 
 ---
 
-## Core Files
+## Repository map (only files relevant to the thesis)
 
-### Data Structure — `data_structures/Triangulation.py`
+| Path | Purpose |
+|---|---|
+| [data_structures/Triangulation.py](data_structures/Triangulation.py) | Core data structure — DCEL triangulation |
+| [ExhaustiveSearchAlgorithm.py](ExhaustiveSearchAlgorithm.py) | The only algorithm used in the thesis |
+| [XExhaustiveSearch.py](XExhaustiveSearch.py) | Test executable — main empirical evaluation |
+| [XCheckMISHypothesis.py](XCheckMISHypothesis.py) | Test executable — MIS hypothesis check |
+| [GenerateConvexPolygonTriangulations.py](GenerateConvexPolygonTriangulations.py) | Generator — convex polygon triangulations |
+| [GenerateRandomPointSetTriangulations.py](GenerateRandomPointSetTriangulations.py) | Generator — point-set triangulations |
+| [GenerateSuites.py](GenerateSuites.py) | Generator — problem pairs (suites) from triangulations |
+| [render_export/](render_export/) | All figures used in the thesis are produced here |
+| [used_suites_for_thesis_results.txt](used_suites_for_thesis_results.txt) | **List of the exact test suites evaluated in the thesis** |
+| [data/suites/generated/](data/suites/generated/) | Generated suites (inputs to the test executables) |
+| [data/convex_polygon/generated/](data/convex_polygon/generated/), [data/point_set/generated/](data/point_set/generated/) | Generated triangulations referenced by the suites |
 
-The central data structure of the entire project. Implements a triangulation as a **Doubly-Connected Edge List (DCEL)** with:
+Everything else in the repository (the `frontend/` pygame app, the `X*.py` files not listed above, the `io_utils/`, the additional rendering helpers) was **not** used for the thesis.
 
-- `Vertex`, `HalfEdge`, `Face` — the low-level DCEL primitives
-- `Triangulation` — the main class, supporting:
-  - Initialization from a convex polygon (`initialize_regular_polygon`) or from an explicit edge list (`initialize_from_edges`)
-  - Edge flipping: `flip_edge()`, `flip_edges_simultaneous()`, `is_flippable()`
-  - Enumerating all **independent flip sets** (including all maximal ones) via `get_independent_flip_sets()`
-  - Comparing two triangulations by shared edges / geometric crossings
-  - A comprehensive `sanity_check()` that validates the DCEL invariants
+---
 
-### Algorithm — `ExhaustiveSearchAlgorithm.py`
+## Core data structure — [data_structures/Triangulation.py](data_structures/Triangulation.py)
 
-Implements a **BFS-based exhaustive search** over the simultaneous-flip graph between two triangulations. The main function is:
+The central data structure of the entire project. A triangulation is represented as a **Doubly-Connected Edge List (DCEL)** built from `Vertex`, `HalfEdge`, and `Face`. The `Triangulation` class supports:
+
+- Initialization from a convex polygon (`initialize_regular_polygon`) or from an explicit point/edge list (`initialize_from_edges`)
+- Edge flipping: `flip_edge`, `flip_edges_simultaneous`, `is_flippable`
+- Enumeration of all independent flip sets, including all maximal ones, via `get_independent_flip_sets`
+- Comparison between two triangulations by shared edges and geometric crossings
+- A `sanity_check` that verifies all DCEL invariants (Euler's formula, twin/next/prev consistency, face consistency)
+
+## Core algorithm — [ExhaustiveSearchAlgorithm.py](ExhaustiveSearchAlgorithm.py)
+
+A **BFS over the simultaneous-flip graph** between a source and a target triangulation. Returns *all* optimal (shortest) paths, or `None` if the timeout (default 10 min) is reached.
 
 ```python
-exhaustive_simultanious_flip_graph_search(source, target, flags...) -> (paths | None, did_timeout)
+exhaustive_simultanious_flip_graph_search(
+    source: Triangulation,
+    target: Triangulation,
+    ignore_happy_edges: bool = False,
+    only_flip_maximal_sets: bool = False,
+    only_flip_descreasing_intersection_score: bool = False,
+    never_flip_positive_intersection_score_for_individual_flips: bool = False,
+    only_one_path_per_state: bool = False,
+    only_single_flips: bool = False,
+    timeout: float = 600.0,
+) -> tuple[list[list[StepData]] | None, bool]   # (paths, did_timeout)
 ```
 
-Key flags that control search behaviour:
-
-| Flag | Effect |
-|---|---|
-| `ignore_happy_edges` | Skip edges already present in the target |
-| `only_flip_maximal_sets` | Only explore maximal independent sets at each step |
-| `only_flip_descreasing_intersection_score` | Prune paths that do not reduce the intersection score |
-| `only_one_path_per_state` | Keep only one representative path per visited state |
-| `only_single_flips` | Restrict to single-edge flips (classic flip graph) |
-| `timeout` | Abort after 10 minutes and return `did_timeout=True` |
-
-Returns the list of all optimal (shortest) paths found, or `None` if no solution exists within the timeout.
+The flags select the pruning strategy used by the search. The two test executables below set these flags differently.
 
 ---
 
-## Test Executables
+## Running the tests
 
-Both executables accept either a **single pair** or a **suite** of pairs as input.
-
-### `XExhaustiveSearch.py` — Main empirical evaluation
-
-Runs the exhaustive search algorithm over a test suite and reports:
-- Number of optimal paths and their length
-- Per-path flip sequences (marking which steps use maximal sets)
-- Equivalence classes of paths by total edge set
-- Twin-pair statistics (suite mode): coverage, all-maximal path ratios, etc.
+Both test executables share the same CLI:
 
 ```
-python XExhaustiveSearch.py <parser> <mode> <source> [target] [-log]
+python <executable>.py <parser> <mode> <suite-or-source> [target] [-log]
 ```
 
 | Argument | Values | Description |
 |---|---|---|
-| `<parser>` | `-ps` / `-cp` | Point-set or convex-polygon triangulation format |
-| `<mode>` | `-suite` / `-no_suite` | Run a whole suite or a single pair |
-| `<source>` | suite name or file path | Suite name (relative to `data/suites/`) or source triangulation file |
-| `[target]` | file path | Target triangulation file (only in `-no_suite` mode) |
-| `[-log]` | optional flag | Write a crash-safe progress log to `test_results/logs/progress.log` |
+| `<parser>` | `-cp` / `-ps` | Convex polygon or general point-set format |
+| `<mode>` | `-suite` / `-no_suite` | Run a whole suite of pairs, or one pair |
+| `<suite-or-source>` | suite name *or* triangulation file path | In `-suite` mode: the suite name (relative to `data/suites/`). In `-no_suite` mode: the source triangulation file |
+| `[target]` | triangulation file path | Required only in `-no_suite` mode |
+| `[-log]` | optional flag | Writes a crash-safe progress log to `test_results/logs/progress.log` |
 
-**Suite example (convex polygon):**
-```
-python XExhaustiveSearch.py -cp -suite generated/cp_7_ALL_520652526_suite_n1722_twins
-```
+### [XExhaustiveSearch.py](XExhaustiveSearch.py) — main empirical evaluation
 
-**Suite example (point set):**
-```
-python XExhaustiveSearch.py -ps -suite generated/6_25_ALL_849624902_suite_n1878_twins -log
-```
+Runs the unconstrained exhaustive search on every pair in a suite and reports, per pair: the number of optimal paths, their length, the per-step flip sets (with a flag for maximal sets), the equivalence classes by total edge set. In suite mode, it additionally aggregates twin-pair statistics and the share of all-maximal optimal paths.
 
-Results are typically redirected to a file:
+**Reproducing a thesis result** (e.g. convex polygons with 7 vertices):
+
 ```
 python XExhaustiveSearch.py -cp -suite generated/cp_7_ALL_520652526_suite_n1722_twins > test_results/from_generated/cp_rand7_result.txt
 ```
 
-### `XCheckMISHypothesis.py` — Hypothesis test
+**Point-set example** with progress log:
 
-A specialised variant that tests whether the **maximal-independent-set (MIS) hypothesis** holds: it runs the search with `only_flip_maximal_sets`, `only_flip_descreasing_intersection_score`, and `only_one_path_per_state` all enabled. If any pair has no solution under these constraints, the hypothesis is falsified and the run terminates early.
+```
+python XExhaustiveSearch.py -ps -suite generated/6_25_ALL_849624902_suite_n1878_twins -log > test_results/from_generated/ps_rand6_result.txt
+```
 
-Usage mirrors `XExhaustiveSearch.py`:
+### [XCheckMISHypothesis.py](XCheckMISHypothesis.py) — MIS hypothesis check
+
+A specialised variant that runs the search with the three flags
+`only_flip_maximal_sets`, `only_flip_descreasing_intersection_score`, and
+`only_one_path_per_state` all enabled. If any pair has no solution under these constraints, the **maximal-independent-set hypothesis** is falsified and the run terminates early.
+
 ```
-python XCheckMISHypothesis.py <parser> <mode> <source> [target] [-log]
+python XCheckMISHypothesis.py -cp -suite generated/cp_7_ALL_520652526_suite_n1722_twins
 ```
+
+### Which suites were used in the thesis?
+
+The exact 22 suites used for the empirical evaluation are listed in **[used_suites_for_thesis_results.txt](used_suites_for_thesis_results.txt)**:
+
+- **Convex polygon** (`-cp`): 12 suites, polygon sizes 4 – 15
+- **General point set** (`-ps`): 10 suites, point sets of size 6 – 15
+
+Suite filenames follow the pattern `<type>_<size>_<flip-range>_<seed>_suite_n<count>_twins`, where `<count>` is the number of problem pairs and `_twins` means each pair is included in both directions.
 
 ---
 
-## Test Instance Generation
+## Generating new test data
 
-All generators are interactive CLIs — run them without arguments and follow the prompts.
+All three generators are interactive — run them without arguments and answer the prompts.
 
-### `GenerateConvexPolygonTriangulations.py`
+| Script | Output location | What it generates |
+|---|---|---|
+| [GenerateConvexPolygonTriangulations.py](GenerateConvexPolygonTriangulations.py) | `data/convex_polygon/generated/<folder>/` | Triangulations of a convex polygon (mode `ALL` enumerates every distinct one; mode `N random` samples via random flip sequences) |
+| [GenerateRandomPointSetTriangulations.py](GenerateRandomPointSetTriangulations.py) | `data/point_set/generated/<folder>/` | Triangulations of random point sets, starting from a Delaunay triangulation; same `ALL` / `N random` modes |
+| [GenerateSuites.py](GenerateSuites.py) | `data/suites/generated/<name>.json` | Pairs up generated triangulations into a suite (all pairs or N random pairs per point set; optional `_twins` produces each pair in both directions) |
 
-Generates triangulations of a convex polygon with a given number of vertices.
-
-- Mode **ALL**: discovers every distinct triangulation via BFS.
-- Mode **N random**: samples N triangulations by applying random sequences of flips.
-
-Output: JSON files in `data/convex_polygon/generated/<folder>/`.
-
-```
-python GenerateConvexPolygonTriangulations.py
-```
-
-### `GenerateRandomPointSetTriangulations.py`
-
-Generates triangulations of random point sets.
-
-- Starts from a Delaunay triangulation of a randomly sampled point set.
-- Mode **ALL** or **N random** flips, same as above.
-
-Output: JSON files in `data/point_set/generated/<folder>/`.
-
-```
-python GenerateRandomPointSetTriangulations.py
-```
-
-### `GenerateSuites.py`
-
-Pairs up triangulations from a generated folder into a test suite.
-
-- Generates all pairs or N random pairs per point set.
-- Optionally produces **twin** pairs (each pair is included in both directions).
-
-Output: a single JSON file in `data/suites/generated/` that lists source/target triangulation names. This file is then passed directly to `XExhaustiveSearch.py` or `XCheckMISHypothesis.py`.
-
-```
-python GenerateSuites.py
-```
+The output of `GenerateSuites.py` is exactly what the two test executables consume as their `-suite` argument.
 
 ---
 
-## Test Suites Used in the Thesis
+## Figures — [render_export/](render_export/)
 
-The exact suites used for the empirical evaluation are listed in **`used_suites_for_thesis_results.txt`**. There are 22 suites in total, split into two groups:
-
-- **Convex polygon** (`-cp`): polygon sizes 4 – 15 vertices
-- **General point set** (`-ps`): point sets with 6 – 15 vertices
-
-All suite files are located in `data/suites/generated/` and follow the naming pattern:
-
-```
-<type>_<size>_<flip-range>_<seed>_suite_n<count>_twins
-```
-
-Where `<count>` is the number of problem pairs and `_twins` means each pair appears in both directions.
+All figures shown in the thesis are produced by the scripts in [render_export/scripts/](render_export/scripts/) (e.g. `XMISDecomposition.py`, `XHappyEdgeProgressFlip.py`, `XCappedChannels.py`). The shared rendering backend is [render_export/GraphRenderer.py](render_export/GraphRenderer.py); colours and styling helpers live alongside it.
 
 ---
 
-## Visualization — `render_export/`
+## Not used for the thesis
 
-All modules and scripts used to generate figures for the thesis. `render_export/scripts/` contains individual render scripts (e.g. `XMISDecomposition.py`, `XHappyEdgeProgressFlip.py`) that produce Matplotlib figures. `render_export/GraphRenderer.py` is the shared rendering backend.
-
----
-
-## Other Files
-
-The repository also contains a **pygame-based interactive application** (`frontend/`), additional test executables (`XFindShortestPath.py`, `XFlipGraphAnalysis.py`, etc.), and various IO utilities — none of these were used in the thesis work and are not documented here.
+The repository also contains a pygame-based interactive application (`frontend/`), several additional `X*.py` executables, and a few I/O helpers — none of these were used for the thesis and they can be ignored when reviewing.
