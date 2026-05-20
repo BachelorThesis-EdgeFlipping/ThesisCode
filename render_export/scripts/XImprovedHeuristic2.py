@@ -5,8 +5,11 @@ from render_export.StatisticsGraphRenderer import StatisticsGraph
 
 
 vertices = [6,7,8,9,10,11,12,13,14,15]
-oms = [100, 99.5, 97.8, 97.9, 96.2, 95.7, 92.4, 89.8, 91.5, 88.7]
-either = [100, 100, 99.9, 100, 99.7,99.7,97.8,98.4,99.6,100]
+#oms = [100, 99.5, 97.8, 97.9, 96.2, 95.7, 92.4, 89.8, 91.5, 88.7]
+#either = [100, 100, 99.9, 100, 99.7,99.7,97.8,98.4,99.6,100]
+
+oms = [100, 99.5, 98.9, 97.7, 96.2, 95.5, 93.9, 91.1, 91.5, 90.1]
+either = [100, 100, 100,99.9, 99.7, 99.7, 99.6, 99.2,99.6, 98.1]
 
 graph = StatisticsGraph(title='Group General', xlabel='Number of vertices', ylabel='Success rate (%)')
 graph.add_dataset('Dual MIS search', vertices, either, Color.PURPLE, 's')
