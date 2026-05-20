@@ -1,0 +1,28 @@
+These are all the suites I used for empirical evaluation in the thesis.
+
+Group Convex (convex polygon):
+generated/cp_4_ALL_514922352_suite_n2_twins
+generated/cp_5_ALL_487183760_suite_n20_twins 
+generated/cp_6_ALL_459010394_suite_n182_twins 
+generated/cp_7_ALL_520652526_suite_n1722_twins 
+generated/cp_8_ALL_589830891_suite_n17292_twins 
+generated/cp_9_6-20_609531686_suite_n10530_twins 
+generated/cp_10_8-25_922919284_suite_n2450_twins 
+generated/cp_11_10-27_809184803_suite_n1892_twins 
+generated/cp_12_10-35_535119973_suite_n380_twins 
+generated/cp_13_10-40_351180391_suite_n380_twins
+generated/cp_14_10-45_455018549_suite_n214_twins
+generated/cp_15_10-50_825497199_suite_n160_twins
+
+Group General (arbitrary point set):
+
+generated/6_25_ALL_849624902_suite_n1878_twins
+generated/7_20_5-12_987304659_suite_n4100_twins
+generated/8_20_5-15_333102433_suite_n7600_twins
+generated/9_20_6-20_640228263_suite_n4200_twins
+generated/10_8_8-25_249865554_suite_n632_twins
+generated/11_15_10-27_925147516_suite_n3150_twins
+generated/12_8_10-35_12739374_suite_n2448_twins
+generated/13_8_10-28_233755268_suite_n720_twins
+generated/14_8_10-40_437174055_suite_n142_twins
+generated/15_6_15-50_490835095_suite_n120_twins
